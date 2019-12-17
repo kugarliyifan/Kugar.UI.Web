@@ -2,6 +2,8 @@
 用于提供asp.net mvc5 / asp.net core mvc 的一些常用类库
 旧的git历史 ,可以查看 https://gitee.com/kugar/Kugar.Core/tree/master/UI/Kugar.Core.Web
 
+[![NuGet](https://img.shields.io/nuget/v/Kugar.Core.Web.NetCore)](https://nuget.org/packages/Kugar.Core.Web.NetCore)
+
 常用的类有
 
 1.用于webapi中,使用json方式post数据,然后在action中,使用函数参数的方式进行接收,省去了需要为不同的action建立不同的model接收数据,并对参数提供数据校验的功能
