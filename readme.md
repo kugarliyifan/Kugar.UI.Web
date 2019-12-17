@@ -1,5 +1,6 @@
 该项目是从Kugar.Core解决方案中分离出来,独立管理
 用于提供asp.net mvc5 / asp.net core mvc 的一些常用类库
+旧的git历史 ,可以查看 https://gitee.com/kugar/Kugar.Core/tree/master/UI/Kugar.Core.Web
 
 常用的类有
 
@@ -50,6 +51,7 @@
 
 7. ApplicationBuilderExtMethod 用于提供一些公用的函数
     1) AddPhysicalStaticFiles 扩展函数,用于比较方便的添加一个物理文件的映射
+    ```
         app.AddPhysicalStaticFiles("uploads","uploads");  //将uploads文件开放外部访问
-
+    ```
 8. RequestLocal类用提供每个链接才有的数据,类似于 ThreadLocal 功能,只是作用范围是一个Request范围内

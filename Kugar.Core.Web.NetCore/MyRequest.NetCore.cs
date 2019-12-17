@@ -349,6 +349,12 @@ namespace Kugar.Core.Web
             return env;
         }
 
+        /// <summary>
+        /// 用于提供类似原先Asp.net 的Server.MapPath功能
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="path">目录</param>
+        /// <returns></returns>
         public static string MapPath(this HttpRequest request, string path)
         {
             if (path[0]=='/')
@@ -363,7 +369,7 @@ namespace Kugar.Core.Web
         }
 
         /// <summary>
-        /// 获取当前站点的所在文件夹
+        /// 获取当前站点的所在文件夹,站点的根目录
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
