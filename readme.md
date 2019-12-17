@@ -4,7 +4,7 @@
 常用的类有
 
 1.用于webapi中,使用json方式post数据,然后在action中,使用函数参数的方式进行接收,省去了需要为不同的action建立不同的model接收数据,并对参数提供数据校验的功能
-  
+  ```
     1) 在start.cs中:
         core 2.1 中:
             services.AddMvc().EnableJsonValueModelBinder(); //启用json方式的ModelBinder
@@ -32,7 +32,7 @@
         }
 
         注意的是content-type一定要 为application/json 或者text/json
-  
+  ```
 2. ImageActionResult 构建一个图片数据作为ActionResult
 
 3. QrCodeActionResult 构建一个二维码图片的ActionResult,传入string自动生成对应的二维码图片,后返回给客户端
@@ -43,7 +43,9 @@
 
 6. HttpContext类提供了静态访问当前HttpContext的功能
     1)使用时,在start.cs中加入
+    ```
         app.UseStaticHttpContext()
+    ```
     2)使用时: HttpContext.Current
 
 7. ApplicationBuilderExtMethod 用于提供一些公用的函数
