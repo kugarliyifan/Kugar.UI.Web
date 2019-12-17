@@ -3,7 +3,7 @@
 
 常用的类有
 
-1.用于webapi中,使用json方式post数据,然后在action中,使用函数参数的方式进行接收,省去了需要为不同的action建立不同的model接收数据
+1.用于webapi中,使用json方式post数据,然后在action中,使用函数参数的方式进行接收,省去了需要为不同的action建立不同的model接收数据,并对参数提供数据校验的功能
   
     1) 在start.cs中:
         core 2.1 中:
@@ -12,10 +12,11 @@
             services.AddControllersWithViews().EnableJsonValueModelBinder(); //启用json方式的ModelBinder
     2) 在 controller中
         [FromBodyJson()]  //加上该特性,标识该action启用json绑定的方式,并可以设定是否在匹配名称时,忽略大小写
-        public async Task<IActionResult> ApiTest(string keyword="",
-                (int productID,int qty)[] productlst, // 支持数组/单个形式的ValueTuple绑定
-                int pageIndex=1,
-                int pageSize=20)
+        public async Task<IActionResult> ApiTest(
+                string keyword="",
+                [Required](int productID,int qty)[] productlst, // 支持数组/单个形式的ValueTuple绑定
+                [MinValue(1)]int pageIndex=1,
+                [Range(10,100)]int pageSize=20)
 
     3) Http post json的方式提交如下格式数据:
         {
