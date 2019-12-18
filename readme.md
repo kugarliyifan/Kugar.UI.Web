@@ -3,6 +3,7 @@
 用于提供asp.net mvc5 / asp.net core mvc 的一些常用类库
 
 旧的git历史 ,可以查看 https://gitee.com/kugar/Kugar.Core/tree/master/UI/Kugar.Core.Web
+                   https://gitee.com/kugar/Kugar.Core/tree/master/UI/Kugar.Core.Web.NetCore
 
 [![NuGet](https://img.shields.io/nuget/v/Kugar.Core.Web.NetCore)](https://nuget.org/packages/Kugar.Core.Web.NetCore)
 
