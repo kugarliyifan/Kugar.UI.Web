@@ -11,4 +11,12 @@
     <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.2.0" PrivateAssets="All" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\Kugar.Core.Web.Core3.Demo\Controllers\ApiTestController.cs" Link="Controllers\ApiTestController.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Kugar.Core.Web.NetCore\Kugar.Core.Web.NetCore.csproj" />
+  </ItemGroup>
+
 </Project>

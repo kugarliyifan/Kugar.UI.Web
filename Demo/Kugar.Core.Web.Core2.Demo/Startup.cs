@@ -30,8 +30,8 @@ namespace Kugar.Core.Web.Core2.Demo
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+            
+            services.AddMvc().EnableJsonValueModelBinder().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -48,6 +48,7 @@ namespace Kugar.Core.Web.Core2.Demo
 
             app.UseStaticFiles();
             app.UseCookiePolicy();
+            app.UseStaticHttpContext();
 
             app.UseMvc(routes =>
             {

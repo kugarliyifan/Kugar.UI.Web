@@ -23,7 +23,7 @@ namespace Kugar.Core.Web.Core3.Demo
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllersWithViews();
+            services.AddControllersWithViews().EnableJsonValueModelBinder();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

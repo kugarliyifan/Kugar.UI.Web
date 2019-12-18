@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -372,7 +373,7 @@ namespace Kugar.Core.Web
 
             for (int i = 0; i < names.Count; i++)
             {
-                var type = _valueTypes[i];
+                var type = GenericArgumentTypes[i];
                 var name = names[i];
 
                 if (string.IsNullOrWhiteSpace(name))
@@ -411,9 +412,17 @@ namespace Kugar.Core.Web
 
         protected TupleElementNamesAttribute Attribute => _attr;
 
-        protected Type ModelType => _modelType;
+        protected Type ModelType
+        {
+            get => _modelType;
+            set => _modelType = value;
+        }
 
-        protected Type[] GenericArgumentTypes => _valueTypes;
+        protected Type[] GenericArgumentTypes
+        {
+            get => _valueTypes;
+            set => _valueTypes = value;
+        }
     }
 
     /// <summary>
@@ -432,17 +441,15 @@ namespace Kugar.Core.Web
                 _isArray = true;
                 _elementType = modelType.GetElementType();
             }
-            else if(modelType.IsInterface)
+            else 
             {
                 if (modelType.IsImplementlInterface(typeof(IList<>)) || modelType.IsImplementlInterface(typeof(IEnumerable<>)))
                 {
-                    _elementType = typeof(List<>).MakeGenericType(modelType.GetGenericArguments());
+                    _elementType = modelType.GetGenericArguments()[0];
+                    //ModelType = typeof(List<>).MakeGenericType(modelType.GetGenericArguments());
+                    GenericArgumentTypes = modelType.GetGenericArguments()[0].GetGenericArguments();
                     _isList = true;
                 }
-            }
-            else
-            {
-                _elementType = modelType;
             }
             
 
@@ -462,7 +469,7 @@ namespace Kugar.Core.Web
                 }
                 else if (jvalue is JArray jarray)
                 {
-                    var array = new object[jarray.Count];
+                    IList array = Array.CreateInstance(_elementType,jvalue.Count());
 
                     for (int i = 0; i < jarray.Count; i++)
                     {
@@ -481,23 +488,20 @@ namespace Kugar.Core.Web
 
                     Validate(array, bindingContext);
 
-                    object result = null;
-
+               
                     if (_isArray)
                     {
-                        result = array;
-                    }
-                    else if (_isList)
-                    {
-                        result = Activator.CreateInstance(ModelType, array);
+                        bindingContext.ModelState.SetModelValue(bindingContext.ModelName, array, array.ToStringEx());
+                        bindingContext.Result = ModelBindingResult.Success(array);
                     }
                     else
                     {
-                        result = Activator.CreateInstance(ModelType, array);
+                        var result = Activator.CreateInstance(ModelType, array);
+                        bindingContext.ModelState.SetModelValue(bindingContext.ModelName, result, result.ToStringEx());
+                        bindingContext.Result = ModelBindingResult.Success(result);
                     }
 
-                    bindingContext.ModelState.SetModelValue(bindingContext.ModelName, result, result.ToStringEx());
-                    bindingContext.Result = ModelBindingResult.Success(result);
+                    
                 }
                 else
                 {
