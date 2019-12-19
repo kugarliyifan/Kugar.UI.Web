@@ -276,7 +276,7 @@ namespace Kugar.Core.Web
                 {
                     foreach (var result in validResults)
                     {
-                        bindingContext.ModelState.AddModelError(bindingContext.ModelName, new ValidationException(result, null, value), bindingContext.ModelMetadata);
+                        bindingContext.ModelState.AddModelError(bindingContext.FieldName, new ValidationException(result, null, value), bindingContext.ModelMetadata);
                     }
 
                     return false;
@@ -295,6 +295,13 @@ namespace Kugar.Core.Web
             if (bindingContext.HttpContext.Items.TryGetValue("__jsonData", out var item))
             {
                 var json = (JObject)item;
+
+                if (json?.ContainsKey(bindingContext.FieldName)!=true)
+                {
+                    value = null;
+                    return false;
+                }
+
                 if (_isCaseSensitive)
                 {
                     value = json?.GetValue(bindingContext.FieldName);
@@ -333,13 +340,13 @@ namespace Kugar.Core.Web
 
         public override async Task BindModelAsync(ModelBindingContext bindingContext)
         {
-            if (TryGetJsonValue(bindingContext, bindingContext.FieldName,out var jvalue))
+            if (TryGetJsonValue(bindingContext, bindingContext.FieldName,out var jvalue) && jvalue!=null)
             {
                 var value = jvalue?.ToObject(bindingContext.ModelType);
 
                 Validate(value, bindingContext);
 
-                bindingContext.ModelState.SetModelValue(bindingContext.ModelName, value, value.ToStringEx());
+                bindingContext.ModelState.SetModelValue(bindingContext.FieldName, value, value.ToStringEx());
                 bindingContext.Result = ModelBindingResult.Success(value);
             }
             else
@@ -395,13 +402,13 @@ namespace Kugar.Core.Web
 
         public override async Task BindModelAsync(ModelBindingContext bindingContext)
         {
-            if (TryGetJsonValue(bindingContext, bindingContext.FieldName,out var jvalue))
+            if (TryGetJsonValue(bindingContext, bindingContext.FieldName,out var jvalue) && jvalue != null)
             {
                 var value = decodeJsonToValueTuple((JObject) jvalue,_modelType);
 
                 Validate(value, bindingContext);
 
-                bindingContext.ModelState.SetModelValue(bindingContext.ModelName, value, value.ToStringEx());
+                bindingContext.ModelState.SetModelValue(bindingContext.FieldName, value, value.ToStringEx());
                 bindingContext.Result = ModelBindingResult.Success(value);
             }
             else
@@ -459,7 +466,7 @@ namespace Kugar.Core.Web
 
         public override async Task BindModelAsync(ModelBindingContext bindingContext)
         {
-            if (TryGetJsonValue(bindingContext, bindingContext.FieldName, out var jvalue))
+            if (TryGetJsonValue(bindingContext, bindingContext.FieldName, out var jvalue) && jvalue != null)
             {
                 if (jvalue == null)
                 {

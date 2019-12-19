@@ -48,6 +48,7 @@
 5. MyRequest类提供了一系列对Request的GetXXX系列函数以及其他通用操作函数
 
 6. HttpContext类提供了静态访问当前HttpContext的功能
+
     1)使用时,在start.cs中加入
     ```
         app.UseStaticHttpContext()
