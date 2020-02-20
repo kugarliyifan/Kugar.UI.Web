@@ -1,13 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
+using Kugar.Core.Web.Core3.Demo.Controllers;
+using Kugar.Core.Web.Formatters;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace Kugar.Core.Web.Core3.Demo
 {
@@ -23,7 +29,15 @@ namespace Kugar.Core.Web.Core3.Demo
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllersWithViews().EnableJsonValueModelBinder();
+            services.AddControllersWithViews(opt =>
+            {
+                opt.OutputFormatters.Insert(0,new ValueTupleOutputFormatter(x =>
+                {
+                    x.NamingStrategy= new CamelCaseNamingStrategy(true,true);
+                }));
+            }).AddNewtonsoftJson().EnableJsonValueModelBinder();
+
+            
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

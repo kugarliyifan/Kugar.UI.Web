@@ -4,15 +4,12 @@
     <TargetFrameworks>netcoreapp2.1;netcoreapp3.0;</TargetFrameworks>
     <RootNamespace>Kugar.Core.Web</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.0.71</Version>
+    <Version>1.0.72</Version>
     <Authors>Kugar</Authors>
     <Product>Kugar.Core.Web</Product>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
     <RazorGenerateComponentDesignTime>true</RazorGenerateComponentDesignTime>
-    <Description>1.增加JsonValueProviderFactory对System.ComponentModel.DataAnnotations方式做数据校验的支持
-2.增加MinValueAttribute,MaxValueAttribute,ValueInAttribute的校验规则支持
-3.优化了对ValueTuple数组形式的参数支持
-</Description>
+    <Description>+ ValueTupleOutputFormatter,ValueTupleContractResolver几个类用于Action的返回ValueTuple的Json序列化</Description>
     <PackageProjectUrl>https://github.com/kugarliyifan/Kugar.UI.Web</PackageProjectUrl>
   </PropertyGroup>
 
