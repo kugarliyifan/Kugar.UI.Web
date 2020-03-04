@@ -4,12 +4,13 @@
     <TargetFrameworks>netcoreapp2.1;netcoreapp3.0;</TargetFrameworks>
     <RootNamespace>Kugar.Core.Web</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.0.72</Version>
+    <Version>1.0.73</Version>
     <Authors>Kugar</Authors>
     <Product>Kugar.Core.Web</Product>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
     <RazorGenerateComponentDesignTime>true</RazorGenerateComponentDesignTime>
-    <Description>+ ValueTupleOutputFormatter,ValueTupleContractResolver几个类用于Action的返回ValueTuple的Json序列化</Description>
+    <Description>+ ValueTupleOutputFormatter,ValueTupleContractResolver几个类用于Action的返回ValueTuple的Json序列化
++.net core 3.0 中,增加IControllerWithLayerMsg接口,用于为controller增加msgbox函数,并且,view中使用LayerServerMsg类输出所需的js脚本</Description>
     <PackageProjectUrl>https://github.com/kugarliyifan/Kugar.UI.Web</PackageProjectUrl>
   </PropertyGroup>
 
