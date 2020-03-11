@@ -19,3 +19,15 @@
             services.AddHttpContextAccessor(); 
             app.UseStaticHttpContext();  
         2.请预先把uploads目录新建好,并且赋予写权限
+
+2.通用的校验码图形生成和获取图片的Action
+    图片地址为:  WebCore/Verification/VerificationCode?type={type} 或者 WebCore/Verification/VerificationCode/{type} get 方式
+    注意:
+        1.type可以为不填,
+        2.使用 Session.GetString("VerificationCode_{type}") 获取本次生成的校验码做校验,如果type为空,则使用 Session.GetString("VerificationCode") 获取
+        3.本功能需配合Session使用,请自行加入 services.AddSession();app.UseSession(); 
+3.通用的MsgBox系列Controller扩展函数,基于layer
+    在Controller的Action中,使用
+        this.MsgBoxXXXXX("")
+    在view中:
+        @(new LayerServerMsg().RenderJS())

@@ -12,7 +12,9 @@
     <Description>+ ValueTupleOutputFormatter,ValueTupleContractResolver几个类用于Action的返回ValueTuple的Json序列化
 +.net core 3.0 中,增加IControllerWithLayerMsgExt扩展函数,用于为controller增加msgbox函数,并且,view中使用LayerServerMsg类输出所需的js脚本</Description>
     <PackageProjectUrl>https://github.com/kugarliyifan/Kugar.UI.Web</PackageProjectUrl>
-    <PackageReleaseNotes>新增一个FileIOController,用于支持通用的文件上传</PackageReleaseNotes>
+    <PackageReleaseNotes>1.新增一个FileIOController,用于支持通用的文件上传
+2.新增一个 VerificationController 用于通用的生成校验码
+3.新增 MsgBox系列的Controller的扩展函数,基于layer的弹出窗口</PackageReleaseNotes>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.0' ">

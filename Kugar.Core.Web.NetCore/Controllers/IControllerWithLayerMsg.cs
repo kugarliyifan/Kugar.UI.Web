@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace Kugar.Core.Web.Controllers
 {
-#if NETCOREAPP3_0 || NETCOREAPP3_1
+
 
     public static class ControllerWithLayerMsgExt
     {
@@ -151,6 +151,6 @@ namespace Kugar.Core.Web.Controllers
             return HtmlString.Empty;
         }
     }
-#endif
+
 
 }

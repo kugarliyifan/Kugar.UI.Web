@@ -38,7 +38,8 @@ namespace Kugar.Core.Web.Core3.Demo
             }).AddNewtonsoftJson().EnableJsonValueModelBinder();
 
             services.AddHttpContextAccessor();
-                
+
+            services.AddSession();
 
             services.Configure<FileIOOption>(opt =>
             {
@@ -66,6 +67,8 @@ namespace Kugar.Core.Web.Core3.Demo
             app.UseStaticFiles();
 
             app.UseRouting();
+
+            app.UseSession();
 
             app.UseAuthorization();
 
