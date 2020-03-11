@@ -6,17 +6,19 @@ using Kugar.Core.BaseStruct;
 using Kugar.Core.ExtMethod;
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Http.Extensions;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace Kugar.Core.Web.Controllers
 {
 #if NETCOREAPP3_0 || NETCOREAPP3_1
-    public interface IControllerWithLayerMsg
+
+    public static class ControllerWithLayerMsgExt
     {
 
-        protected void MsgBox(string message)
+        public static void MsgBox(this Controller c, string message)
         {
-            MsgBoxAndScript(msg: message);
+            MsgBoxAndScript(c,msg: message);
         }
 
         /// <summary>
@@ -24,25 +26,25 @@ namespace Kugar.Core.Web.Controllers
         /// </summary>
         /// <param name="message"></param>
         /// <param name="defaultUrl"></param>
-        protected void MsgAndGotoReferer(string message, string defaultUrl = "")
+        public static void MsgAndGotoReferer(this Controller c, string message, string defaultUrl = "")
         {
-            if (HttpContext.Current.Request.Headers.TryGetValue("Referer", out var referer) && referer.HasData() && !string.IsNullOrWhiteSpace(referer.FirstOrDefault()))
+            if (c.HttpContext.Request.Headers.TryGetValue("Referer", out var referer) && referer.HasData() && !string.IsNullOrWhiteSpace(referer.FirstOrDefault()))
             {
-                MsgBoxAndGoto(message, referer.FirstOrDefault());
+                MsgBoxAndGoto(c,message, referer.FirstOrDefault());
             }
             else if (!string.IsNullOrWhiteSpace(defaultUrl))
             {
-                MsgBoxAndGoto(message, defaultUrl);
+                MsgBoxAndGoto(c,message, defaultUrl);
             }
             else
             {
-                MsgBoxAndScript(message, "history.go(-1)");
+                MsgBoxAndScript(c,message, "history.go(-1)");
             }
         }
 
-        protected void MsgBoxAndRefresh(string msg)
+        public static void MsgBoxAndRefresh(this Controller c, string msg)
         {
-            MsgBoxAndGoto(msg, HttpContext.Current.Request.GetDisplayUrl());
+            MsgBoxAndGoto(c,msg, HttpContext.Current.Request.GetDisplayUrl());
         }
 
         /// <summary>
@@ -50,29 +52,29 @@ namespace Kugar.Core.Web.Controllers
         /// </summary>
         /// <param name="msg"></param>
         /// <param name="url"></param>
-        protected void MsgBoxAndGoto(string msg, string url)
+        public static void MsgBoxAndGoto(this Controller c, string msg, string url)
         {
-            MsgBoxAndScript(msg, $"WebUIJS.GoTo('{url}',this);");
+            MsgBoxAndScript(c,msg, $"WebUIJS.GoTo('{url}',this);");
         }
 
 
-        protected void MsgBoxAndScript(string msg, string script = "")
+        public static void MsgBoxAndScript(this Controller c, string msg, string script = "")
         {
             if (string.IsNullOrWhiteSpace(msg) && string.IsNullOrWhiteSpace(script))
             {
                 return;
             }
 
-            List<VM_MVCMsgBoxItem> msgList = (List<VM_MVCMsgBoxItem>)HttpContext.Current.Items["MsgData_Temp"];
+            List<VM_MVCMsgBoxItem> msgList = (List<VM_MVCMsgBoxItem>)c.HttpContext.Items["MsgData_Temp"];
 
             if (msgList == null)
             {
                 msgList=new List<VM_MVCMsgBoxItem>(2);
-                HttpContext.Current.Items["MsgData_Temp"] = msgList;
+                c.HttpContext.Items["MsgData_Temp"] = msgList;
             }
             else
             {
-                msgList = (List<VM_MVCMsgBoxItem>) HttpContext.Current.Items["MsgData_Temp"];
+                msgList = (List<VM_MVCMsgBoxItem>)c.HttpContext.Items["MsgData_Temp"];
             }
 
             msgList.Add(new VM_MVCMsgBoxItem(msg, script));
@@ -91,7 +93,7 @@ namespace Kugar.Core.Web.Controllers
             _viewContext = viewContext;
         }
 
-        public HtmlString RenderNoWebUIJS(bool forceRenderJQ = false, bool renderLayerCdn = false)
+        public HtmlString RenderJS(bool renderJQCdn = false, bool renderLayerCdn = false)
         {
             var lst = (List<VM_MVCMsgBoxItem>)_viewContext.HttpContext.Items["MsgData_Temp"];
 
@@ -101,7 +103,7 @@ namespace Kugar.Core.Web.Controllers
             {
                 var n1 = $"scriptServerMsg_{RandomEx.Next()}";
 
-                if (forceRenderJQ)
+                if (renderJQCdn)
                 {
                     _viewContext.Writer.WriteLine($"<script src=\"https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js\" charset=\"utf-8\"></script>");
                 }
@@ -150,6 +152,5 @@ namespace Kugar.Core.Web.Controllers
         }
     }
 #endif
-
 
 }

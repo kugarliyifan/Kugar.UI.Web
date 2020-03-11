@@ -37,7 +37,16 @@ namespace Kugar.Core.Web.Core3.Demo
                 }));
             }).AddNewtonsoftJson().EnableJsonValueModelBinder();
 
-            
+            services.AddHttpContextAccessor();
+                
+
+            services.Configure<FileIOOption>(opt =>
+            {
+                opt.TypeMappings=new Dictionary<string, string>()
+                {
+                    ["1"]="/uploads/adv"
+                };
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -59,6 +68,8 @@ namespace Kugar.Core.Web.Core3.Demo
             app.UseRouting();
 
             app.UseAuthorization();
+
+            app.UseStaticHttpContext();
 
             app.UseEndpoints(endpoints =>
             {
