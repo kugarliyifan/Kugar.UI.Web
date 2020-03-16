@@ -34,23 +34,13 @@ namespace Kugar.Core.Web
             _cacheMethodIsJson=new ConcurrentDictionary<MethodInfo, FromBodyJsonAttribute>();
         }
 
-        public
-#if NETCOREAPP3_0
-            async
-#endif
-            Task CreateValueProviderAsync(ValueProviderFactoryContext context)
+        public async  Task CreateValueProviderAsync(ValueProviderFactoryContext context)
         {
             var d = (ControllerActionDescriptor)context.ActionContext.ActionDescriptor;
 
             if (context.ActionContext.HttpContext.Request.Method.CompareTo("get",true))
             {
-#if NETCOREAPP3_0
                 return;
-#endif
-#if Net45 || NETCOREAPP2_1
-                return Task.CompletedTask;
-#endif
-
             }
 
             //if (!context.ActionContext.HttpContext.Request.ContentType.Contains("json",true))
@@ -62,12 +52,7 @@ namespace Kugar.Core.Web
 
             if (!contentType.Contains("application/json",true) && !contentType.Contains("text/json",true))
             {
-#if NETCOREAPP3_0
                 return;
-#endif
-#if Net45 || NETCOREAPP2_1
-                return Task.CompletedTask;
-#endif
             }
 
             //var s = d.MethodInfo.GetCustomAttributes(typeof(FromBodyJsonAttribute), true);
@@ -83,12 +68,7 @@ namespace Kugar.Core.Web
                 var inputStream= context.ActionContext.HttpContext.Request.Body;
                 inputStream.Position = 0;
 
-#if NETCOREAPP3_0
-               var dataBytes=await inputStream.ReadAllBytesAsync();
-#endif
-#if Net45 || NETCOREAPP2_1
-                var dataBytes = inputStream.ReadAllBytes();
-#endif
+                var dataBytes=await inputStream.ReadAllBytesAsync();
 
                 var jsonStr = Encoding.UTF8.GetString(dataBytes);
 
@@ -111,10 +91,6 @@ namespace Kugar.Core.Web
                 context.ValueProviders.Insert(0, _provider);
             }
 
-#if Net45 || NETCOREAPP2_1
-            return Task.CompletedTask;
-#endif
-            
         }
 
 

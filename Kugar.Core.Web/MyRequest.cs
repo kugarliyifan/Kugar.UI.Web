@@ -746,6 +746,11 @@ namespace Kugar.Core.Web
             }
         }
 
+        public static int? GetIntNullable(this HttpRequest request, string name, int? defaultValue = null)
+        {
+            return request.GetString(name).ToIntNullable(defaultValue);
+        }
+
         public static decimal GetDecimal(this HttpRequest request, string name, decimal defaultValue = 0m)
         {
             var s = GetString(request, name);
@@ -810,8 +815,8 @@ namespace Kugar.Core.Web
             }
         }
 
-        public static DateTime? GetDateTimeNullable(this HttpRequest request, string name, string formatStr,
-                                                    DateTime? defaultValue)
+        public static DateTime? GetDateTimeNullable(this HttpRequest request, string name, string formatStr = "yyyy-MM-dd",
+                                                    DateTime? defaultValue=null)
         {
             var s = GetString(request, name);
 
@@ -820,7 +825,7 @@ namespace Kugar.Core.Web
             return s.ToDateTimeNullable(formatStr, defaultValue);
         }
 
-        public static DateTime GetDateTime(this HttpRequest request, string name, string formatStr, DateTime defaultValue)
+        public static DateTime GetDateTime(this HttpRequest request, string name, string formatStr , DateTime defaultValue)
         {
             var s = GetString(request, name);
 
@@ -838,7 +843,10 @@ namespace Kugar.Core.Web
             //}
         }
 
-
+        public static DateTime GetDateTime(this HttpRequest request, string name, string formatStr = "yyyy-MM-dd")
+        {
+            return GetDateTime(request, name, formatStr, DateTime.Now);
+        }
 
         public static T GetIntEnum<T>(this HttpRequest request, string name, T defaultValue)
         {
@@ -853,6 +861,26 @@ namespace Kugar.Core.Web
                 return defaultValue;
             }
         }
+
+        public static T? GetIntEnumNullable<T>(this HttpRequest request, string name, T defaultValue) where T:struct
+        {
+            if (!request.Form.ContainsKey(name) && !request.Query.ContainsKey(name))
+            {
+                return null;
+            }
+
+            var v = GetInt(request, name, (int)Convert.ToInt32(defaultValue));
+
+            if (Enum.IsDefined(typeof(T), v))
+            {
+                return (T)Enum.ToObject(typeof(T), v);
+            }
+            else
+            {
+                return defaultValue;
+            }
+        }
+
 
         public static JObject GetJson(this HttpRequest request, string name, JObject defaultValue = null)
         {

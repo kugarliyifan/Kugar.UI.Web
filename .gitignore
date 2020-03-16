@@ -338,3 +338,4 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+/Demo/Kugar.Core.Web.Core3.Demo/uploads

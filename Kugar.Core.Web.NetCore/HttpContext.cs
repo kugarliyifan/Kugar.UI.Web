@@ -27,7 +27,7 @@ namespace Kugar.Core.Web
             {
                 if (m_httpContextAccessor == null)
                 {
-                    throw new Exception("未初始化,请使用app.UseStaticHttpContext()");
+                    throw new Exception("未初始化,请使用app.UseStaticHttpContext()以及services.AddHttpContextAccessor()");
                 }
                 return m_httpContextAccessor.HttpContext;
             }

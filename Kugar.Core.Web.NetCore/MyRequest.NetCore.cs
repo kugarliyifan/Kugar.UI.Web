@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
@@ -9,6 +10,8 @@ using Kugar.Core.BaseStruct;
 using Kugar.Core.ExtMethod;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Serialization;
 
@@ -16,7 +19,30 @@ namespace Kugar.Core.Web
 {
     public static partial class MyRequest
     {
-   
+        public static MethodInfo GetRequestMethodInfo(this Microsoft.AspNetCore.Http.HttpContext context)
+        {
+            return context.Request.GetRequestMethodInfo();
+        }
+
+
+        public static MethodInfo GetRequestMethodInfo(this HttpRequest request)
+        {
+            var accessor = (IActionContextAccessor)request.HttpContext.RequestServices.GetService(typeof(IActionContextAccessor));
+
+            if (accessor==null)
+            {
+                return null;
+            }
+
+            var ac = (accessor.ActionContext.ActionDescriptor as ControllerActionDescriptor);
+            if (ac==null)
+            {
+                return null;
+            }
+
+            return ac.MethodInfo;
+        }
+
         public static string GetString(this HttpRequest request, string name, string defaultValue="", bool autoDecode=false)
         {
             try
