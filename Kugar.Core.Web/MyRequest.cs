@@ -100,7 +100,7 @@ namespace Kugar.Core.Web
                 {
                     if (autoDecode)
                     {
-                        return HttpUtility.UrlDecode(s);
+                        return HttpUtility.UrlDecode(s,request.ContentEncoding);
                     }
                     else
                     {
