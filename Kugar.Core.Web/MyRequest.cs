@@ -16,9 +16,11 @@ using Newtonsoft.Json.Linq;
 using System.Web;
 
 
-#if NETCOREAPP2_1 || NETCOREAPP3_0
+
+#if NETCOREAPP2_1 || NETCOREAPP3_0 || NETCOREAPP3_1
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 #endif
 
 
@@ -100,7 +102,7 @@ namespace Kugar.Core.Web
                 {
                     if (autoDecode)
                     {
-                        return HttpUtility.UrlDecode(s);
+                        return HttpUtility.UrlDecode(s,request.ContentEncoding);
                     }
                     else
                     {

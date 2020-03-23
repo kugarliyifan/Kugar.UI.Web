@@ -1,11 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Kugar.Core.BaseStruct;
+using Kugar.Core.ExtMethod;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ApplicationModels;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace Kugar.Core.Web
@@ -78,6 +83,11 @@ namespace Kugar.Core.Web
         /// </summary>
         public IReadOnlyDictionary<string,string> TypeMappings { set; get; }
 
+        /// <summary>
+        /// 用于映射不同类型的type,key为type,,使用不用类型的授权方式,,如果多个type使用同一种授权,则type可以使用逗号分隔
+        /// </summary>
+        public IReadOnlyDictionary<string, AuthorizeAttribute> AuthroizeMappigns { set; get; } 
+
         internal IActionResult onRequestInternal(Microsoft.AspNetCore.Http.HttpContext context, string type)
         {
             return OnRequest?.Invoke(context,type);
@@ -99,6 +109,54 @@ namespace Kugar.Core.Web
         /// </summary>
         public event GenerateFileName GenerateFileName;
     }
+
+    //public static class FileIOGlobalExtented
+    //{
+    //    public static IMvcBuilder AddFileIOAuthroizeMapping(this IMvcBuilder builder)
+    //    {
+    //        builder.Services.AddSingleton<Convention>();
+
+    //        return builder;
+    //    }
+
+    //    public class Convention : IApplicationModelConvention
+    //    {
+    //        private FileIOOption _fileOption;
+
+    //        public Convention(IOptions<FileIOOption> fileOption)
+    //        {
+                
+    //        }
+
+    //        public void Apply(ApplicationModel application)
+    //        {
+    //            var c = application.Controllers.First(x => x is FileIOController);
+
+    //            if (_fileOption.AuthroizeMappigns.HasData())
+    //            {
+    //                foreach (var mapping in _fileOption.AuthroizeMappigns)
+    //                {
+    //                    c.
+    //                }
+    //            }
+                
+
+    //            ClassUsedByConventionOptions.ClassUsedByConventionAction(ClassUsedByConvention);
+    //            ClassUsedByConvention.Apply(application);
+    //        }
+    //    }
+
+    //    public class MyConfigureOptions<MvcOptions> : IConfigureOptions<MvcOptions>
+    //    {
+    //        private readonly TConvention _convention;
+    //        public MyConfigureOptions(TConvention convention)
+    //        {
+    //            _convention = convention;
+    //        }
+
+    //        public void Configure(MvcOptions options) => options.Conventions.Add(_convention);
+    //    }
+    //}
 
     public delegate string GenerateFileName(IFormFile file,string type);
 

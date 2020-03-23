@@ -161,7 +161,7 @@ namespace Kugar.Core.Web
             }
 #endif
 
-#if NETCOREAPP3_0
+#if NETCOREAPP3_0 || NETCOREAPP3_1
             public IModelBinder GetBinder(ModelBinderProviderContext context)
             {
                 var metaData = context.Metadata as DefaultModelMetadata;
