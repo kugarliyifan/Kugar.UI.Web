@@ -25,10 +25,15 @@ namespace Kugar.Core.Web
                 throw new ArgumentNullException(nameof(folder));
             }
 
-            if (string.IsNullOrWhiteSpace(requestPath))
+            if (requestPath==null)
             {
-                throw new  ArgumentNullException(nameof(requestPath));
+                throw new ArgumentNullException(nameof(requestPath));
             }
+
+            //if (string.IsNullOrWhiteSpace(requestPath))
+            //{
+            //    throw new  ArgumentNullException(nameof(requestPath));
+            //}
 
             if (!Path.IsPathFullyQualified(folder))
             {
@@ -50,7 +55,7 @@ namespace Kugar.Core.Web
                 folder = folder + '/';
             }
 
-            if (requestPath[0]!='/')
+            if (requestPath.Length<=0 || requestPath[0]!='/')
             {
                 requestPath = "/" + requestPath;
             }

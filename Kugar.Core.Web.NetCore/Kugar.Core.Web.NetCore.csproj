@@ -4,19 +4,14 @@
     <TargetFrameworks>netcoreapp2.1;netcoreapp3.0;netcoreapp3.1;</TargetFrameworks>
     <RootNamespace>Kugar.Core.Web</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.0.83</Version>
+    <Version>1.0.84</Version>
     <Authors>Kugar</Authors>
     <Product>Kugar.Core.Web</Product>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
     <RazorGenerateComponentDesignTime>true</RazorGenerateComponentDesignTime>
     <Description>一个通用的Web工具类</Description>
     <PackageProjectUrl>https://github.com/kugarliyifan/Kugar.UI.Web</PackageProjectUrl>
-    <PackageReleaseNotes>1.新增一个FileIOController,用于支持通用的文件上传
-2.新增一个 VerificationController 用于通用的生成校验码
-3.新增 MsgBox系列的Controller的扩展函数,基于layer的弹出窗口
-4.ValueTupleOutputFormatter,ValueTupleContractResolver几个类用于Action的返回ValueTuple的Json序列化
-5.新增编译为3.1
-</PackageReleaseNotes>
+    <PackageReleaseNotes>1.修复AddPhysicalStaticFiles的错误</PackageReleaseNotes>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.0'  Or '$(TargetFramework)' == 'netcoreapp3.1'">
