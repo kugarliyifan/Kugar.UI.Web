@@ -65,6 +65,19 @@ namespace Kugar.Core.Web
                 requestPath = requestPath.Substring(0, requestPath.Length - 1);
             }
 
+            if (!Directory.Exists(folder))
+            {
+                try
+                {
+                    Directory.CreateDirectory(folder);
+                }
+                catch (Exception e)
+                {
+                    throw new DirectoryNotFoundException($"创建文件夹失败,请确保{folder}文件夹存在");
+                    return;
+                }
+            }
+
             var opt = new StaticFileOptions()
                       {
                           FileProvider = new PhysicalFileProvider(folder),
