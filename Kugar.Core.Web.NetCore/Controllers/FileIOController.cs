@@ -56,10 +56,15 @@ namespace Kugar.Core.Web
 
                 var newPath = Path.Combine(path, DateTime.Now.ToString("yyyyMMdd"), fileName);
 
-                var result=await file.SaveAsExAsync(newPath);
+                var result=await file.SaveAsExAsync(Path.Combine(Request.GetWebsitePath(), newPath.Trim('/')));
 
                 if (result.IsSuccess)
                 {
+                    if (Option.IncludeHost)
+                    {
+                        newPath =$"{(Request.IsHttps?"https":"http")}://{Request.Host.ToStringEx()}{newPath}";
+                    }
+
                     return new JsonResult(new SuccessResultReturn(newPath));
                 }
                 else
@@ -108,6 +113,11 @@ namespace Kugar.Core.Web
         /// 对文件名生成的事件,如无需额外处理,请返回null或者空字符串
         /// </summary>
         public event GenerateFileName GenerateFileName;
+
+        /// <summary>
+        /// 上传后的链接,是否包含域名
+        /// </summary>
+        public bool IncludeHost { set; get; }
     }
 
     //public static class FileIOGlobalExtented

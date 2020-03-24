@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Kugar.Core.ExtMethod;
 using Kugar.Core.Web.Core3.Demo.Controllers;
 using Kugar.Core.Web.Formatters;
 using Microsoft.AspNetCore.Builder;
@@ -47,6 +48,7 @@ namespace Kugar.Core.Web.Core3.Demo
                 {
                     ["1"]="/uploads/adv"
                 };
+                opt.IncludeHost = true;
             });
         }
 
