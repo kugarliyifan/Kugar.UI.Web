@@ -97,8 +97,6 @@ namespace Kugar.Core.Web.Controllers
         {
             var lst = (List<VM_MVCMsgBoxItem>)_viewContext.HttpContext.Items["MsgData_Temp"];
 
-            
-
             if (lst.HasData())
             {
                 var n1 = $"scriptServerMsg_{RandomEx.Next()}";
@@ -152,5 +150,68 @@ namespace Kugar.Core.Web.Controllers
         }
     }
 
+    public class WeUIServerMsg
+    {
+        private ViewContext _viewContext = null;
 
+        public WeUIServerMsg(ViewContext viewContext)
+        {
+            _viewContext = viewContext;
+        }
+
+        public HtmlString RenderJS(bool renderWeUIJSCdn = false,bool renderWeUICssCdn=false)
+        {
+            var lst = (List<VM_MVCMsgBoxItem>)_viewContext.HttpContext.Items["MsgData_Temp"];
+
+            if (lst.HasData())
+            {
+                var n1 = $"scriptServerMsg_{RandomEx.Next()}";
+
+                if (renderWeUIJSCdn)
+                {
+                    _viewContext.Writer.WriteLine($"<script type=\"text/javascript\" src=\"https://res.wx.qq.com/open/libs/weuijs/1.2.1/weui.min.js\"></script>");
+                }
+
+                if (renderWeUICssCdn)
+                {
+                    _viewContext.Writer.WriteLine($"<link rel=\"stylesheet\" href=\"https://res.wx.qq.com/open/libs/weui/2.0.1/weui.min.css\">");
+                }
+
+                _viewContext.Writer.WriteLine($"<script id=\"{n1}\" type=\"text/javascript\">");
+
+                //_viewContext.Writer.WriteLine($@"var WebUIJS=WebUIJS??{{}};
+                //            WebUIJS.GoTo=function(url){{window.location.href=url;}};
+                //                ");
+
+                _viewContext.Writer.WriteLine("$(document).ready(function(){");
+
+                foreach (var item in lst)
+                {
+                    if (!string.IsNullOrWhiteSpace(item.Message))
+                    {
+                        _viewContext.Writer.WriteLine($"var alertDom = weui.alert('{item.Message}',function(){{ alertDom.hide();\n ");
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(item.JavsScript))
+                    {
+                        var n = $"severmsg_{RandomEx.Next()}";
+                        _viewContext.Writer.WriteLine($"function {n} (){{");
+                        _viewContext.Writer.WriteLine(item.JavsScript);
+                        _viewContext.Writer.WriteLine("}");
+                        _viewContext.Writer.WriteLine($"{n}.call($('#{n1}'));");
+                    }
+
+                    //_viewContext.Writer.WriteLine("});");
+
+                }
+                _viewContext.Writer.WriteLine("return false;}) });");
+
+
+                _viewContext.Writer.WriteLine("</script>");
+
+            }
+
+            return HtmlString.Empty;
+        }
+    }
 }
