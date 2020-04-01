@@ -217,27 +217,31 @@ namespace Kugar.Core.Web
                     {
                         var rootpath = GetWebsitePath(HttpContext.Current.Request);// HttpContext.Current.Request.GetWebsitePath();
 
-                        if (path[0] == '/')
-                        {
-                            filePath = rootpath + filePath;
-                        }
-                        else
-                        {
-                            filePath = $"{rootpath}/{filePath}";
-                        }
+                        filePath = Path.Join(rootpath, filePath);
+
+                        //if (path[0] == '/')
+                        //{
+                        //    filePath = rootpath + filePath;
+                        //}
+                        //else
+                        //{
+                        //    filePath = $"{rootpath}/{filePath}";
+                        //}
                     }
                     else
                     {
                         var rootPath = Directory.GetCurrentDirectory();
 
-                        if (path[0] == '/')
-                        {
-                            filePath = rootPath + filePath;
-                        }
-                        else
-                        {
-                            filePath = $"{rootPath}/{filePath}";
-                        }
+                        filePath = Path.Join(rootPath, filePath);
+
+                        //if (path[0] == '/')
+                        //{
+                        //    filePath = rootPath + filePath;
+                        //}
+                        //else
+                        //{
+                        //    filePath = $"{rootPath}/{filePath}";
+                        //}
                         
                     }
                 }
@@ -304,14 +308,16 @@ namespace Kugar.Core.Web
                     {
                         var rootpath = HttpContext.Current.Request.GetWebsitePath();
 
-                        if (path[0] == '/')
-                        {
-                            filePath = rootpath + filePath;
-                        }
-                        else
-                        {
-                            filePath = $"{rootpath}/{filePath}";
-                        }
+                        filePath = Path.Join(rootpath, filePath);
+
+                        //if (path[0] == '/')
+                        //{
+                        //    filePath = rootpath + filePath;
+                        //}
+                        //else
+                        //{
+                        //    filePath = $"{rootpath}/{filePath}";
+                        //}
                     }
                     else
                     {
@@ -383,14 +389,16 @@ namespace Kugar.Core.Web
         /// <returns></returns>
         public static string MapPath(this HttpRequest request, string path)
         {
-            if (path[0]=='/')
-            {
-                return Path.Combine(request.GetWebsitePath(), path.Substring(1));
-            }
-            else
-            {
-                return Path.Combine(request.GetWebsitePath(), path);
-            }
+            return Path.Join(request.GetWebsitePath(), path);
+
+            //if (path[0]=='/')
+            //{
+            //    return Path.Join(request.GetWebsitePath(), path.Substring(1));
+            //}
+            //else
+            //{
+            //    return Path.Join(request.GetWebsitePath(), path);
+            //}
             
         }
 
@@ -445,21 +453,48 @@ namespace Kugar.Core.Web
 
         public static string GetBodyString(this HttpRequest request,Encoding encoding=null)
         {
-            if (!request.Body.CanSeek)
-            {
-                request.EnableBuffering();
-            }
-            
+            //if (!request.Body.CanSeek)
+            //{
+            //    request.EnableBuffering();
+            //}
+
             //var oldPositon = request.Body.Position;
 
             request.Body.Position = 0;
 
-            if (encoding==null)
+            if (encoding == null)
             {
-                encoding=Encoding.UTF8;
+                encoding = Encoding.UTF8;
             }
 
-            var data = request.Body.ReadToEnd(encoding);
+            var bytes = request.Body.ReadAllBytes();
+
+            var data = encoding.GetString(bytes);
+
+            request.Body.Position = 0;
+
+            return data;
+        }
+
+        public static async Task<string> GetBodyStringAsync(this HttpRequest request, Encoding encoding = null)
+        {
+            //if (!request.Body.CanSeek)
+            //{
+            //    request.EnableBuffering();
+            //}
+
+            //var oldPositon = request.Body.Position;
+
+            request.Body.Position = 0;
+
+            if (encoding == null)
+            {
+                encoding = Encoding.UTF8;
+            }
+
+            var  bytes =await request.Body.ReadAllBytesAsync();
+
+            var data = encoding.GetString(bytes);
 
             request.Body.Position = 0;
 
