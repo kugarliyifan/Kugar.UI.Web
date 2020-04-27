@@ -179,9 +179,9 @@ namespace Kugar.Core.Web.Controllers
 
                 _viewContext.Writer.WriteLine($"<script id=\"{n1}\" type=\"text/javascript\">");
 
-                //_viewContext.Writer.WriteLine($@"var WebUIJS=WebUIJS??{{}};
-                //            WebUIJS.GoTo=function(url){{window.location.href=url;}};
-                //                ");
+                _viewContext.Writer.WriteLine($@"var WebUIJS=WebUIJS??{{}};
+                            WebUIJS.GoTo=function(url){{window.location.href=url;}};
+                                ");
 
                 _viewContext.Writer.WriteLine("$(document).ready(function(){");
 
