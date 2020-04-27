@@ -189,7 +189,7 @@ namespace Kugar.Core.Web.Controllers
                 {
                     if (!string.IsNullOrWhiteSpace(item.Message))
                     {
-                        _viewContext.Writer.WriteLine($"var alertDom = weui.alert('{item.Message}',function(){{ alertDom.hide();\n ");
+                        _viewContext.Writer.WriteLine($"var alertDom = ($??weui).alert('{item.Message}',function(){{ alertDom.hide();\n ");
                     }
 
                     if (!string.IsNullOrWhiteSpace(item.JavsScript))
