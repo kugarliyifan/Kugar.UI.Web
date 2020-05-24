@@ -15,6 +15,7 @@ using Microsoft.Extensions.Options;
 
 namespace Kugar.Core.Web
 {
+    [ApiExplorerSettings(IgnoreApi = true)]
     public class FileIOController : ControllerBase
     {
         public FileIOController(IOptions<FileIOOption> option)
@@ -27,6 +28,7 @@ namespace Kugar.Core.Web
             Option = option.Value;
         }
 
+        
         [Route("WebCore/FileIO/Upload/{type}")]
         [Route("WebCore/FileIO/Upload")]
         [HttpPost]

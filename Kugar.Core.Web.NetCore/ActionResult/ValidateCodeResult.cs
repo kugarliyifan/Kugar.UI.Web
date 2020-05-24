@@ -13,7 +13,7 @@ namespace Kugar.Core.Web
     /// <summary>
     /// 自动生成校验码的图片,并返回给客户端的ActionResult类 
     /// </summary>
-    public class ValidateCodeResult : ActionResult
+    public class ValidateCodeResult : IActionResult
     {
         private ImageResult _imageResult = null;
         private string _code = "";
@@ -27,7 +27,7 @@ namespace Kugar.Core.Web
             _height = height;
         }
 
-        public override void ExecuteResult(ActionContext context)
+        public void ExecuteResult(ActionContext context)
         {
             //Debug.WriteLine("开始执行2");
             using (var img = CreateValidateGraphic(_width, _height, 20))

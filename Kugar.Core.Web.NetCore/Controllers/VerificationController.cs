@@ -8,8 +8,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Kugar.Core.Web.Controllers
 {
+    [ApiExplorerSettings(IgnoreApi = true)]
     public class VerificationController:ControllerBase
     {
+        /// <summary>
+        /// 获取一个校验码图片信息
+        /// </summary>
+        /// <param name="type">图片类型</param>
+        /// <returns>返回图片数据流</returns>
         [Route("WebCore/Verification/VerificationCode/{type}")]
         [Route("WebCore/Verification/VerificationCode")]
         [HttpGet]

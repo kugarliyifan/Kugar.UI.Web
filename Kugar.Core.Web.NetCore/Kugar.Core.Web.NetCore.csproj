@@ -4,7 +4,7 @@
     <TargetFrameworks>netcoreapp2.1;netcoreapp3.0;netcoreapp3.1;</TargetFrameworks>
     <RootNamespace>Kugar.Core.Web</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.0.92</Version>
+    <Version>1.0.93</Version>
     <Authors>Kugar</Authors>
     <Product>Kugar.Core.Web</Product>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
@@ -46,7 +46,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Kugar.Core.NetCore" Version="1.2.94" />
+    <PackageReference Include="Kugar.Core.NetCore" Version="1.2.111" />
+
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
+    <PackageReference Include="NSwag.AspNetCore" Version="13.5.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson">
+      <Version>3.0.2</Version>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
+    <PackageReference Include="NSwag.AspNetCore" Version="13.5.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson">
+      <Version>3.0.2</Version>
+    </PackageReference>
   </ItemGroup>
 
   <!--<ItemGroup>
