@@ -591,12 +591,14 @@ namespace Kugar.Core.Web
         /// <summary>
         /// 指定该action的函数参数来自于json
         /// </summary>
-        /// <param name="isCaseSensitive">是否强制参数名称大小写匹配,true为强制要求匹配,false为忽略大小写,,null为按全局配置,默认为null</param>
-        public FromBodyJsonAttribute(bool? isCaseSensitive = null)
+        public FromBodyJsonAttribute()
         {
-            IsCaseSensitive = isCaseSensitive;
+            //IsCaseSensitive = isCaseSensitive;
         }
 
-        public bool? IsCaseSensitive { get; }
+        /// <summary>
+        /// 是否强制参数名称大小写匹配,true为强制要求匹配,false为忽略大小写,,null为按全局配置,默认为null
+        /// </summary>
+        public bool? IsCaseSensitive { get; set; } = null;
     }
 }
