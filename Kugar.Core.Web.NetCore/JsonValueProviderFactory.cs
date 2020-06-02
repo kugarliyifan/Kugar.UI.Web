@@ -50,7 +50,7 @@ namespace Kugar.Core.Web
 
             var contentType = context.ActionContext.HttpContext.Request.ContentType;
 
-            if (!contentType.Contains("application/json",true) && !contentType.Contains("text/json",true))
+            if (!string.IsNullOrWhiteSpace(contentType) && !"application/json".Contains(contentType, true) && !contentType.Contains("text/json",true))
             {
                 return;
             }
@@ -100,6 +100,13 @@ namespace Kugar.Core.Web
             //private static JsonModelBinder _caseSensitivebinder = new JsonModelBinder();
             //private static JsonModelBinder _igoreCaseSensitive=new JsonModelBinder(false);
 
+            private bool _isCaseSensitive = false;
+
+            public JsonModelBinderProvider(bool isCaseSensitive)
+            {
+                _isCaseSensitive = isCaseSensitive;
+            }
+
 #if NETCOREAPP2_1 || Net45
             public IModelBinder GetBinder(ModelBinderProviderContext context)
             {
@@ -139,14 +146,14 @@ namespace Kugar.Core.Web
                             if (metaData.ModelType.IsIEnumerable())
                             {
                                 return new JsonArrayValueTupleBinder(valueTupleAttr, metaData.ModelType,
-                                    attr.IsCaseSensitive);
+                                    attr.IsCaseSensitive??_isCaseSensitive);
                             }
 
-                            return new JsonValueTupleBinder(valueTupleAttr, metaData.ModelType, attr.IsCaseSensitive);
+                            return new JsonValueTupleBinder(valueTupleAttr, metaData.ModelType, attr.IsCaseSensitive ?? _isCaseSensitive);
                         }
                         else
                         {
-                            return new JsonModelBinder(attr.IsCaseSensitive);
+                            return new JsonModelBinder(attr.IsCaseSensitive ?? _isCaseSensitive);
                         }
 
                     }
@@ -190,14 +197,14 @@ namespace Kugar.Core.Web
                         if (metaData.ModelType.IsIEnumerable())
                         {
                             return new JsonArrayValueTupleBinder(valueTupleAttr, metaData.ModelType,
-                                attr.IsCaseSensitive);
+                                attr.IsCaseSensitive??_isCaseSensitive);
                         }
 
-                        return new JsonValueTupleBinder(valueTupleAttr, metaData.ModelType,  attr.IsCaseSensitive);
+                        return new JsonValueTupleBinder(valueTupleAttr, metaData.ModelType,  attr.IsCaseSensitive??_isCaseSensitive);
                     }
                     else
                     {
-                        return new JsonModelBinder(attr.IsCaseSensitive);
+                        return new JsonModelBinder(attr.IsCaseSensitive??_isCaseSensitive);
                     }
 
                 }
@@ -340,7 +347,7 @@ namespace Kugar.Core.Web
         private bool _isCaseSensitive = true;
         private Type[] _valueTypes = null;
 
-        public JsonValueTupleBinder( TupleElementNamesAttribute attr,Type modelType, bool isCaseSensitive = true):base(isCaseSensitive)
+        public JsonValueTupleBinder( TupleElementNamesAttribute attr,Type modelType, bool isCaseSensitive = false):base(isCaseSensitive)
         {
             _attr = attr;
             _modelType = modelType;
@@ -514,7 +521,13 @@ namespace Kugar.Core.Web
         //    opt.ValueProviderFactories.Insert(0, new JsonValueProviderFactory());
         //}
 
-        public static IMvcBuilder EnableJsonValueModelBinder(this IMvcBuilder builder)
+        /// <summary>
+        /// 允许json绑定
+        /// </summary>
+        /// <param name="builder"></param>
+        /// <param name="isCaseSensitive">填充参数的时候,是否区分参数名的大小写,为true的时候,为区分大小写,默认为false</param>
+        /// <returns></returns>
+        public static IMvcBuilder EnableJsonValueModelBinder(this IMvcBuilder builder,bool isCaseSensitive=false)
         {
             builder.Services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             builder.Services.TryAddSingleton<IActionContextAccessor, ActionContextAccessor>();
@@ -525,7 +538,7 @@ namespace Kugar.Core.Web
 
             builder.AddMvcOptions(opt =>
             {
-                opt.ModelBinderProviders.Insert(0,new JsonValueProviderFactory.JsonModelBinderProvider());
+                opt.ModelBinderProviders.Insert(0,new JsonValueProviderFactory.JsonModelBinderProvider(isCaseSensitive));
                 opt.ValueProviderFactories.Insert(0, new JsonValueProviderFactory());
 
                 //var jsonFormater = (JsonOutputFormatter)opt.OutputFormatters.FirstOrDefault(x => x is JsonOutputFormatter);
@@ -543,7 +556,7 @@ namespace Kugar.Core.Web
             return builder;
         }
 
-        public static IMvcCoreBuilder EnableJsonValueModelBinder(this IMvcCoreBuilder builder)
+        public static IMvcCoreBuilder EnableJsonValueModelBinder(this IMvcCoreBuilder builder, bool isCaseSensitive = false)
         {
             builder.Services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             builder.Services.TryAddSingleton<IActionContextAccessor, ActionContextAccessor>();
@@ -554,7 +567,7 @@ namespace Kugar.Core.Web
 
             builder.AddMvcOptions(opt =>
             {
-                opt.ModelBinderProviders.Insert(0, new JsonValueProviderFactory.JsonModelBinderProvider());
+                opt.ModelBinderProviders.Insert(0, new JsonValueProviderFactory.JsonModelBinderProvider(isCaseSensitive));
                 opt.ValueProviderFactories.Insert(0, new JsonValueProviderFactory());
 
                 //var jsonFormater = (JsonOutputFormatter)opt.OutputFormatters.FirstOrDefault(x => x is JsonOutputFormatter);
@@ -575,11 +588,15 @@ namespace Kugar.Core.Web
 
     public class FromBodyJsonAttribute : Attribute
     {
-        public FromBodyJsonAttribute(bool isCaseSensitive = true)
+        /// <summary>
+        /// 指定该action的函数参数来自于json
+        /// </summary>
+        /// <param name="isCaseSensitive">是否强制参数名称大小写匹配,true为强制要求匹配,false为忽略大小写,,null为按全局配置,默认为null</param>
+        public FromBodyJsonAttribute(bool? isCaseSensitive = null)
         {
             IsCaseSensitive = isCaseSensitive;
         }
 
-        public bool IsCaseSensitive { get; }
+        public bool? IsCaseSensitive { get; }
     }
 }

@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Xml;
 #if NETCOREAPP3_0 || NETCOREAPP3_1
 
 using System.Diagnostics;
@@ -36,8 +38,6 @@ namespace Kugar.Core.Web.ActionResult
     public interface IJsonTemplateActionResult : IActionResult
     {
         void GetNSwag(JsonSchemaGenerator generator, JsonSchemaResolver resolver, JsonObjectSchemeBuilder builder);
-
-        void BuildJson(JsonTemplateBuilder writer);
     }
 
     public abstract class JsonTemplateActionResult<TModel> : IJsonTemplateActionResult
@@ -75,7 +75,7 @@ namespace Kugar.Core.Web.ActionResult
 
         public virtual void GetNSwag(JsonSchemaGenerator generator, JsonSchemaResolver resolver, JsonObjectSchemeBuilder builder)
         {
-
+            
         }
     }
 
@@ -84,7 +84,7 @@ namespace Kugar.Core.Web.ActionResult
         internal DefaultContractResolver _resolver = null;
         internal JsonSerializerSettings _defaultSettings = null;
 
-        public JsonTemplateBuilder(JsonWriter writer, Microsoft.AspNetCore.Http.HttpContext context)
+        public JsonTemplateBuilder(JsonWriter writer,Microsoft.AspNetCore.Http. HttpContext context)
         {
             var opt = (IOptionsSnapshot<MvcNewtonsoftJsonOptions>)context.RequestServices.GetService(typeof(IOptions<MvcNewtonsoftJsonOptions>));
 
@@ -159,10 +159,14 @@ namespace Kugar.Core.Web.ActionResult
     public class JsonObjectBuilder : JsonBuilderBase
     {
         private Lazy<JsonSerializer> _serializer = new Lazy<JsonSerializer>();
+        private bool _autoBeginObject = true;
 
-        public JsonObjectBuilder(JsonTemplateBuilder builder) : base(builder)
+        public JsonObjectBuilder(JsonTemplateBuilder builder,bool autoBeginObject=true) : base(builder)
         {
-            Writer.WriteStartObject();
+            _autoBeginObject = autoBeginObject;
+
+            if(_autoBeginObject)
+                Writer.WriteStartObject();
         }
 
         public JsonObjectBuilder WriteProperty(string propertyName, string value)
@@ -220,7 +224,7 @@ namespace Kugar.Core.Web.ActionResult
             {
                 _serializer.Value.Serialize(Writer, value);
             }
-
+            
 
             return this;
         }
@@ -229,9 +233,9 @@ namespace Kugar.Core.Web.ActionResult
         {
             if (excludePropertyNames.HasData())
             {
-                if (_jsonSettings.ContractResolver == null)
+                if (_jsonSettings.ContractResolver==null)
                 {
-                    _jsonSettings.ContractResolver = new DefaultContractResolver();
+                    _jsonSettings.ContractResolver=new DefaultContractResolver();
                 }
 
                 var item = (JsonObjectContract)_jsonSettings.ContractResolver.ResolveContract(value.GetType());
@@ -239,14 +243,14 @@ namespace Kugar.Core.Web.ActionResult
 
                 foreach (var prop in item.Properties)
                 {
-                    if (excludePropertyNames.HasData() && excludePropertyNames.Contains(prop.PropertyName))
+                    if (excludePropertyNames.HasData() && excludePropertyNames.Contains(prop.PropertyName,StringComparer.CurrentCultureIgnoreCase))
                     {
                         continue;
                     }
 
                     WritePropertyName(prop.PropertyName);
 
-                    serializer.Serialize(Writer, prop.ValueProvider.GetValue(value));
+                    serializer.Serialize(Writer,prop.ValueProvider.GetValue(value));
                 }
             }
             else
@@ -291,6 +295,11 @@ namespace Kugar.Core.Web.ActionResult
             return new JsonObjectBuilder(Builder);
         }
 
+        public JsonObjectBuilder StartObject()
+        {
+            return new JsonObjectBuilder(Builder);
+        }
+
         public JsonArrayBuilder StartArray(string propertyName)
         {
             WritePropertyName(propertyName);
@@ -298,25 +307,151 @@ namespace Kugar.Core.Web.ActionResult
             return new JsonArrayBuilder(Builder);
         }
 
+        public JsonArrayBuilder StartArray()
+        {
+            return new JsonArrayBuilder(Builder);
+        }
+
+        public JsonObjectBuilderWithValue<T> With<T>(T value)
+        {
+            return new JsonObjectBuilderWithValue<T>(value, this);
+        }
+
         public override void Dispose()
         {
-            Writer.WriteEndObject();
+            if (_autoBeginObject)
+            {
+                Writer.WriteEndObject();
+            }
+            
+        }
+
+        public class JsonObjectBuilderWithValue<T> : JsonObjectBuilder
+        {
+            private JsonObjectBuilder _parent = null;
+            private T _value = default;
+
+            public JsonObjectBuilderWithValue(T value, JsonObjectBuilder parent) : base(parent.Builder,false)
+            {
+                _parent = parent;
+                _value = value;
+            }
+
+            /// <summary>
+            /// 获取属性名,并且获取该属性成员的值
+            /// </summary>
+            /// <typeparam name="TValue"></typeparam>
+            /// <param name="property">类型对应的属性</param>
+            /// <returns></returns>
+            public JsonObjectBuilderWithValue<T> WriteProperty<TValue>(Expression<Func<T, TValue>> property)
+            {
+                var body = property.Body as MemberExpression;
+
+                if (body == null)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(property), "property表达式返回的必须是property或者field");
+                }
+
+                var value = property.Compile()(_value);
+
+                WritePropertyName(body.Member.Name);
+                Writer.WriteValue(value);
+
+                return this;
+            }
+
+            /// <summary>
+            /// 获取属性名,并使用newValue赋值
+            /// </summary>
+            /// <typeparam name="TValue"></typeparam>
+            /// <param name="property">获取属性的注释,名称,以及类型</param>
+            /// <param name="newValue">属性值</param>
+            /// <returns></returns>
+            public JsonObjectBuilderWithValue<T> WriteProperty<TValue, TNewValue>(Expression<Func<T, TValue>> property,TNewValue newValue)
+            {
+                var body = property.Body as MemberExpression;
+
+                if (body == null)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(property), "property表达式返回的必须是property或者field");
+                }
+
+                WritePropertyName(body.Member.Name);
+                Writer.WriteValue(newValue);
+
+                return this;
+            }
+
+
+            /// <summary>
+            /// 添加多个属性值
+            /// </summary>
+            /// <typeparam name="TValue"></typeparam>
+            /// <param name="properties"></param>
+            /// <returns></returns>
+            public JsonObjectBuilderWithValue<T> WriteProperty(params Expression<Func<T, object>>[] properties)
+            {
+                if (properties.HasData())
+                {
+                    foreach (var property in properties)
+                    {
+                        if (property.Body.NodeType == ExpressionType.Convert)
+                        {
+                            var p = property.Body as UnaryExpression;
+
+                            if (p.Operand is MemberExpression m1)
+                            {
+                                WritePropertyName(m1.Member.Name);
+
+                                var value = property.Compile()(_value);
+                                Writer.WriteValue(value);
+                            }
+                            else
+                            {
+                                throw new ArgumentOutOfRangeException(nameof(properties), $"表达式{property.Body.ToString()}无效");
+                            }
+
+                        }
+                        else if (property.Body is MemberExpression m)
+                        {
+                            WritePropertyName(m.Member.Name);
+
+                            var value = property.Compile()(_value);
+                            Writer.WriteValue(value);
+       
+                        }
+                        else
+                        {
+                            throw new ArgumentOutOfRangeException(nameof(properties), $"表达式{property.Body.ToString()}无效");
+                        }
+
+                    }
+                }
+
+                return this;
+            }
+
+            public JsonObjectBuilder End()
+            {
+                return _parent;
+            }
+
         }
     }
+    
 
-
-    public class CustomIgonePropertyResolverContact : DefaultContractResolver
+    public class CustomIgonePropertyResolverContact: DefaultContractResolver
     {
         private string[] _excludePropertyNames = null;
         private IContractResolver _resolver = null;
 
         public CustomIgonePropertyResolverContact(IContractResolver resolver, string[] excludePropertyNames)
         {
-            if (resolver == null)
+            if (resolver==null)
             {
                 resolver = JsonConvert.DefaultSettings?.Invoke().ContractResolver;
             }
-
+                
             _resolver = resolver;
             _excludePropertyNames = excludePropertyNames;
         }
@@ -328,7 +463,7 @@ namespace Kugar.Core.Web.ActionResult
 
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
         {
-            var p = base.CreateProperty(member, memberSerialization);
+            var p= base.CreateProperty(member, memberSerialization);
 
             p.ShouldSerialize = (o) => _excludePropertyNames.Contains(p.PropertyName);
 
@@ -339,22 +474,84 @@ namespace Kugar.Core.Web.ActionResult
 
     public class ResultReturnBuilder : JsonObjectBuilder
     {
-        public ResultReturnBuilder(JsonTemplateBuilder builder, ResultReturn result) : base(builder)
+        private ResultReturnDataType _type = ResultReturnDataType.Auto;
+
+        public ResultReturnBuilder(JsonTemplateBuilder builder, ResultReturn result,ResultReturnDataType type= ResultReturnDataType.Value) : base(builder)
         {
             WriteProperty("Message", result.Message);
             WriteProperty("IsSuccess", result.IsSuccess);
             WriteProperty("ReturnCode", result.ReturnCode);
             WritePropertyName("ReturnData");
 
+            _type = type;
+
+            if (type== ResultReturnDataType.Auto)
+            {
+                var resultType=result.ReturnData.GetType();
+
+                if (resultType.IsPrimitive || resultType==typeof(string))
+                {
+                    _type = ResultReturnDataType.Value;
+                }
+                else if (result.ReturnData is IEnumerable)
+                {
+                    _type = ResultReturnDataType.Array;
+                }
+                else
+                {
+                    _type = ResultReturnDataType.Object;
+                }
+            }
+
+            switch (_type)
+            {
+                case ResultReturnDataType.Object:
+                {
+                    Writer.WriteStartObject();
+                    break;
+                }
+                case ResultReturnDataType.Array:
+                {
+                    Writer.WriteStartArray();
+                    break;
+                }
+            }
+
             //Writer.WriteStartObject();
         }
 
         public override void Dispose()
         {
+            switch (_type)
+            {
+                case ResultReturnDataType.Object:
+                {
+                    Writer.WriteEndObject();
+                    break;
+                }
+                case ResultReturnDataType.Array:
+                {
+                    Writer.WriteEndArray();
+                    break;
+                }
+            }
+
             Writer.WriteEndObject();
 
             //base.Dispose();
         }
+    }
+
+    public enum ResultReturnDataType
+    {
+        Object=0,
+
+        Array=1,
+
+        Value=2,
+
+        Auto=99
+
     }
 
     public class PagedListBuilder : JsonObjectBuilder
@@ -380,14 +577,14 @@ namespace Kugar.Core.Web.ActionResult
 
     public static class JsonBuilderExt
     {
-        public static ResultReturnBuilder StartResultReturn(this JsonBuilderBase builder, ResultReturn result)
+        public static ResultReturnBuilder StartResultReturn(this JsonBuilderBase builder, ResultReturn result, ResultReturnDataType returnDataType = ResultReturnDataType.Value)
         {
-            return new ResultReturnBuilder(builder.Builder, result);
+            return new ResultReturnBuilder(builder.Builder, result, returnDataType);
         }
 
-        public static ResultReturnBuilder StartResultReturn(this JsonTemplateBuilder builder, ResultReturn result)
+        public static ResultReturnBuilder StartResultReturn(this JsonTemplateBuilder builder, ResultReturn result,ResultReturnDataType returnDataType= ResultReturnDataType.Value)
         {
-            return new ResultReturnBuilder(builder, result);
+            return new ResultReturnBuilder(builder, result, returnDataType);
         }
 
         public static PagedListBuilder StartIPagedList(this JsonBuilderBase builder, IPagedInfo result)
@@ -406,11 +603,9 @@ namespace Kugar.Core.Web.ActionResult
         //private JsonSchema _jsonSchema = new JsonSchema();
         private IDictionary<string, JsonSchemaProperty> _properties = null;
         private Func<string, string> _getPropertyTitle = null;
-        private JsonSchemaGenerator _generator = null;
-        private JsonSchemaResolver _schemaResolver = null;
 
 
-        public JsonObjectSchemeBuilder(JsonSchemaGenerator generator, JsonSchemaResolver resolver, IDictionary<string, JsonSchemaProperty> properties, Func<string, string> getPropertyTitle)
+        public JsonObjectSchemeBuilder(IDictionary<string, JsonSchemaProperty> properties, Func<string, string> getPropertyTitle)
         {
             if (getPropertyTitle == null)
             {
@@ -420,23 +615,26 @@ namespace Kugar.Core.Web.ActionResult
             //_propertyName = propertyName;
             _properties = properties;
 
-            _getPropertyTitle = getPropertyTitle;
+             _getPropertyTitle = getPropertyTitle;
 
-            _generator = generator;
-            _schemaResolver = resolver;
+
         }
 
-        public JsonSchemaGenerator Generator => _generator;
-
-        public JsonSchemaResolver Resolver => _schemaResolver;
-
-        public JsonObjectSchemeBuilder AddProperty(string name, JsonObjectType type, string desciption, object example = null)
+        public JsonObjectSchemeBuilder AddProperty(string name, JsonObjectType type, string desciption, object example = null,bool nullable=false)
         {
-            _properties.Add(_getPropertyTitle(name), new JsonSchemaProperty()
+            var realName = _getPropertyTitle(name);
+
+            if (_properties.ContainsKey(realName))
+            {
+                throw new ArgumentOutOfRangeException(nameof(name),$"参数名:{realName}重复");
+            }
+
+            _properties.Add(realName, new JsonSchemaProperty()
             {
                 Type = type,
                 Description = desciption,
                 Example = example,
+                IsNullableRaw = nullable
             });
 
             return this;
@@ -444,25 +642,39 @@ namespace Kugar.Core.Web.ActionResult
 
         public JsonObjectSchemeBuilder AddObjectProperty(string name, string desciption)
         {
+            var realName = _getPropertyTitle(name);
+
+            if (_properties.ContainsKey(realName))
+            {
+                throw new ArgumentOutOfRangeException(nameof(name), $"参数名:{realName}重复");
+            }
+
             var p = new JsonSchemaProperty();
             p.Type = JsonObjectType.Object;
             p.Description = desciption;
-            _properties.Add(_getPropertyTitle(name), p);
+            _properties.Add(realName, p);
 
-            return new JsonObjectSchemeBuilder(_generator, _schemaResolver, p.Properties, _getPropertyTitle);
+            return new JsonObjectSchemeBuilder(p.Properties, _getPropertyTitle);
         }
 
         public JsonObjectSchemeBuilder AddArrayProperty(string name, string desciption)
         {
+            var realName = _getPropertyTitle(name);
+
+            if (_properties.ContainsKey(realName))
+            {
+                throw new ArgumentOutOfRangeException(nameof(name), $"参数名:{realName}重复");
+            }
+
             var p = new JsonSchemaProperty();
             p.Type = JsonObjectType.Array;
             p.Description = desciption;
             p.Item = new JsonSchema();
 
-            _properties.Add(_getPropertyTitle(name), p);
+            _properties.Add(realName, p);
 
 
-            return new JsonObjectSchemeBuilder(_generator, _schemaResolver, p.Item.Properties, _getPropertyTitle);
+            return new JsonObjectSchemeBuilder(p.Item.Properties, _getPropertyTitle);
         }
 
         public JsonObjectSchemeBuilder ExcludeProperty(params string[] names)
@@ -502,38 +714,27 @@ namespace Kugar.Core.Web.ActionResult
                 .AddArrayProperty("data", "分页后的内容");
         }
 
-        public JsonObjectSchemeBuilder AddType(Type target, params string[] excludePropertyNames)
+        public JsonObjectSchemeBuilder AddType(Type target,params string[] excludePropertyNames)
         {
             var s = JsonSchema.FromType(target);
 
             foreach (var property in s.ActualProperties)
             {
-                if (excludePropertyNames.HasData() && excludePropertyNames.Contains(property.Key))
+                if (excludePropertyNames.HasData() && excludePropertyNames.Contains(property.Key,StringComparer.CurrentCultureIgnoreCase))
                 {
                     continue;
                 }
 
-
+                
                 _properties.Add(_getPropertyTitle(property.Key), property.Value);
             }
 
             return this;
         }
 
-        public JsonObjectSchemeBuilder AddProperty<T>(string propertyName)
+        public JsonObjectSchemeBuilderWithType<T> With<T>() where T : class
         {
-            _properties.Add(_getPropertyTitle(propertyName), Generator.Generate(typeof(T)).ActualProperties[propertyName]);
-
-            return this;
-        }
-
-        public JsonObjectSchemeBuilder AddProperty<T>(Expression<Func<T>> property)
-        {
-            var propertyName = (property.Body as MemberExpression).Member.Name;
-
-            _properties.Add(_getPropertyTitle(propertyName), Generator.Generate(typeof(T)).ActualProperties[propertyName]);
-
-            return this;
+            return new JsonObjectSchemeBuilderWithType<T>(this,_properties,_getPropertyTitle);
         }
 
         public void Dispose()
@@ -542,6 +743,210 @@ namespace Kugar.Core.Web.ActionResult
             //{
             //    _properties.Add(p.Key, p.Value);
             //}
+        }
+
+        protected JsonObjectType _typeToJsonObjectType(Type type)
+        {
+            if (type.IsGenericType && type.GetGenericTypeDefinition()== typeof(Nullable<>))
+            {
+                type = type.GetGenericArguments()[0];
+            }
+
+            if (type == typeof(int) ||
+                type == typeof(byte) ||
+                type == typeof(short) ||
+                type == typeof(long) ||
+                type == typeof(uint) ||
+                type == typeof(ushort) ||
+                type == typeof(ulong) ||
+                type.IsEnum
+                )
+            {
+                return JsonObjectType.Integer;
+            }
+            else if (type==typeof(double) || type==typeof(float) || type==typeof(decimal))
+            {
+                return JsonObjectType.Number;
+            }
+            else if (type == typeof(string))
+            {
+                return JsonObjectType.String;
+            }
+            else if (type == typeof(bool))
+            {
+                return JsonObjectType.Boolean;
+            }
+            else if (type.IsIEnumerable())
+            {
+                return JsonObjectType.Array;
+            }
+            else if (type == typeof(DateTime))
+            {
+                return JsonObjectType.String;
+            }
+            else
+            {
+                return JsonObjectType.Object;
+            }
+        }
+    }
+
+
+    public class JsonObjectSchemeBuilderWithType<T> : JsonObjectSchemeBuilder
+    {
+        private JsonObjectSchemeBuilder _parent = null;
+        private Dictionary<string,string> _typeXmlDesc=new Dictionary<string, string>();
+
+        public JsonObjectSchemeBuilderWithType(JsonObjectSchemeBuilder parent, IDictionary<string, JsonSchemaProperty> properties, Func<string, string> getPropertyTitle) : base(properties, getPropertyTitle)
+        {
+            _parent = parent;
+            readXmlFile(typeof(T), _typeXmlDesc);
+        }
+
+        /// <summary>
+        /// 获取属性名,并且使用该属性名对应的类型以及注释
+        /// </summary>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="property">获取属性的注释,名称,以及类型</param>
+        /// <param name="newProperty">覆盖原属性名称</param>
+        /// <param name="type">覆盖原属性数据类型</param>
+        /// <returns></returns>
+        public JsonObjectSchemeBuilderWithType<T> Property<TValue>(Expression<Func<T, TValue>> property, string newPropertyName = null, JsonObjectType? type = null,object example=null,bool nullable = false)
+        {
+            var body = property.Body as MemberExpression;
+
+            if (body==null)
+            {
+                throw new ArgumentOutOfRangeException(nameof(property),"property表达式返回的必须是property或者field");
+            }
+
+            return Property(body, newPropertyName, type, example, nullable);
+        }
+
+        /// <summary>
+        /// 添加多个属性
+        /// </summary>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="properties"></param>
+        /// <returns></returns>
+        public JsonObjectSchemeBuilderWithType<T> Property(params Expression<Func<T, object>>[] properties)
+        {
+            if (properties.HasData())
+            {
+                foreach (var property in properties)
+                {
+                    if (property.Body.NodeType== ExpressionType.Convert)
+                    {
+                        var p = property.Body as UnaryExpression;
+
+                        if (p.Operand is MemberExpression m1)
+                        {
+                            this.Property(m1);
+                        }
+                        else
+                        {
+                            throw new ArgumentOutOfRangeException(nameof(properties), $"表达式{property.Body.ToString()}无效");
+                        }
+                        
+                    }
+                    else if(property.Body is MemberExpression m)
+                    {
+                        this.Property(m);
+                    }
+                    else
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(properties),$"表达式{property.Body.ToString()}无效");
+                    }
+
+                    //var expr=property.NodeType== ExpressionType.Convert ?property as UnaryExpression
+                    
+                }
+            }
+
+            return this;
+        }
+
+        protected JsonObjectSchemeBuilderWithType<T> Property(MemberExpression property,
+            string newProperty = null, JsonObjectType? type = null, object example = null, bool nullable = false)
+        {
+            var name = string.IsNullOrWhiteSpace(newProperty) ? property.Member.Name : newProperty;
+
+            JsonObjectType realtype;
+
+            string desc = _typeXmlDesc.TryGetValue(property.Member.Name, "");
+
+            if (type == null)
+            {
+                if (property.Member is PropertyInfo p)
+                {
+                    realtype = _typeToJsonObjectType(p?.PropertyType);
+                    nullable = p.PropertyType.IsGenericType && p.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>);
+                }
+                else if (property.Member is FieldInfo f)
+                {
+                    realtype = _typeToJsonObjectType(f?.FieldType);
+                    nullable = f.FieldType.IsGenericType && f.FieldType.GetGenericTypeDefinition() == typeof(Nullable<>);
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException(nameof(property), "传入的必须是属性或者字段");
+                }
+            }
+            else
+            {
+                realtype = type.Value;
+            }
+
+            _parent.AddProperty(name, realtype, desc, example: example, nullable: nullable);
+
+            return this;
+        }
+
+        public JsonObjectSchemeBuilder End()
+        {
+            return _parent;
+        }
+
+        private void readXmlFile(Type type, Dictionary<string,string> dic)
+        {
+            //var type = typeof(T);
+
+            var xmlFilePath = Path.Join( Path.GetDirectoryName(type.Assembly.Location),Path.GetFileNameWithoutExtension(type.Assembly.Location)+".xml");
+
+            var xml=new XmlDocument();
+
+            xml.Load(xmlFilePath);
+
+            var l1 = xml.GetElementsByTagName("member").AsEnumerable<XmlElement>();
+
+            var lst= l1
+                .Where(x => x.GetAttribute("name").StartsWith($"P:{type.FullName}"))
+                .Select(x =>
+                    new KeyValuePair<string, string>(
+                        x.GetAttribute("name").Substring($"P:{type.FullName}".Length + 1).ToStringEx(),
+                        x.GetElementsByTagName("summary").AsEnumerable<XmlElement>().FirstOrDefault()?.InnerText.ToStringEx()));
+
+            foreach (var item in lst)
+            {
+                if (dic.ContainsKey(item.Key))
+                {
+                    continue;
+                }
+                dic.Add(item.Key,item.Value.Trim());
+            }
+
+            if (!type.IsInterface)
+            {
+                if (type.BaseType != null && type.BaseType != typeof(object))
+                {
+                    readXmlFile(type.BaseType, dic);
+                }
+            }
+
+            foreach (var face in type.GetInterfaces())
+            {
+                readXmlFile(face,dic);
+            }
         }
     }
 
@@ -563,14 +968,14 @@ namespace Kugar.Core.Web.ActionResult
             return services;
         }
 
-        public static void UseJsonTemplate(this AspNetCoreOpenApiDocumentGeneratorSettings opt)
+        public static void UseJsonTemplate(this AspNetCoreOpenApiDocumentGeneratorSettings opt,params Assembly[] typeAssemblies)
         {
-            var types =AppDomain.CurrentDomain.GetAssemblies().SelectMany(x=>x.GetTypes())
+            var types = typeAssemblies.SelectMany(x=>x.GetTypes())
                 .Where(x => x.IsImplementlInterface(typeof(IJsonTemplateActionResult)) && !x.IsAbstract &&
                             x.IsPublic && x.GetMethod("GetNSwag")?.IsInstance() == true)
                 .ToArrayEx();
 
-
+            
             foreach (var t in types)
             {
                 opt.TypeMappers.Add(new ObjectTypeMapper(t, (gen, resolver) =>
@@ -587,7 +992,7 @@ namespace Kugar.Core.Web.ActionResult
 
                     var scheme = new JsonSchema();
 
-                    var builder = new JsonObjectSchemeBuilder(gen, resolver, scheme.Properties, getName);
+                    var builder = new JsonObjectSchemeBuilder(scheme.Properties, getName);
 
                     var tmp = Activator.CreateInstance(t);
 
