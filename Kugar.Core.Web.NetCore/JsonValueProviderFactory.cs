@@ -50,7 +50,7 @@ namespace Kugar.Core.Web
 
             var contentType = context.ActionContext.HttpContext.Request.ContentType;
 
-            if (!string.IsNullOrWhiteSpace(contentType) && !"application/json".Contains(contentType, true) && !contentType.Contains("text/json",true))
+            if (string.IsNullOrWhiteSpace(contentType) || (!contentType.StartsWith("application/json",StringComparison.CurrentCultureIgnoreCase) && !contentType.StartsWith("text/json",StringComparison.CurrentCultureIgnoreCase)))
             {
                 return;
             }
