@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Xml;
-#if NETCOREAPP3_0 || NETCOREAPP3_1
 
 using System.Diagnostics;
 using System.IO;
@@ -14,11 +13,13 @@ using Fasterflect;
 using Kugar.Core.BaseStruct;
 using Kugar.Core.ExtMethod;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.AspNetCore.Routing;
+
+#if NETCOREAPP3_1 || NETCOREAPP3_0
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+#endif
+
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -77,6 +78,7 @@ namespace Kugar.Core.Web.ActionResult
         {
             
         }
+
     }
 
     public class JsonTemplateBuilder
@@ -86,11 +88,20 @@ namespace Kugar.Core.Web.ActionResult
 
         public JsonTemplateBuilder(JsonWriter writer,Microsoft.AspNetCore.Http. HttpContext context)
         {
+#if NETCOREAPP3_0 || NETCOREAPP3_1
             var opt = (IOptionsSnapshot<MvcNewtonsoftJsonOptions>)context.RequestServices.GetService(typeof(IOptions<MvcNewtonsoftJsonOptions>));
 
             _resolver = opt.Value.SerializerSettings.ContractResolver as DefaultContractResolver;
 
             _defaultSettings = opt.Value.SerializerSettings;
+#endif
+#if NETCOREAPP2_1
+            _resolver = JsonConvert.DefaultSettings?.Invoke().ContractResolver as DefaultContractResolver;
+            _defaultSettings = JsonConvert.DefaultSettings?.Invoke();
+#endif
+
+
+
 
             Writer = writer;
 
@@ -952,6 +963,7 @@ namespace Kugar.Core.Web.ActionResult
 
     public static class JsonTemplateHelper
     {
+#if NETCOREAPP3_1 || NETCOREAPP3_0
         public static IServiceCollection EnableSyncIO(this IServiceCollection services)
         {
             // If using IIS:
@@ -967,6 +979,8 @@ namespace Kugar.Core.Web.ActionResult
 
             return services;
         }
+       
+#endif
 
         public static void UseJsonTemplate(this AspNetCoreOpenApiDocumentGeneratorSettings opt,params Assembly[] typeAssemblies)
         {
@@ -980,13 +994,25 @@ namespace Kugar.Core.Web.ActionResult
             {
                 opt.TypeMappers.Add(new ObjectTypeMapper(t, (gen, resolver) =>
                 {
+                    DefaultContractResolver contactResolver = null;
+
+#if NETCOREAPP3_0 || NETCOREAPP3_1
                     var options =
-                        (IOptions<MvcNewtonsoftJsonOptions>)Kugar.Core.Web.HttpContext.Current.RequestServices.GetService(
-                            typeof(IOptions<MvcNewtonsoftJsonOptions>));
+                                (IOptions<MvcNewtonsoftJsonOptions>)Kugar.Core.Web.HttpContext.Current.RequestServices.GetService(
+                                    typeof(IOptions<MvcNewtonsoftJsonOptions>));
+                    contactResolver = options.Value.SerializerSettings.ContractResolver as DefaultContractResolver;
+
+#endif
+#if NETCOREAPP2_1
+                    contactResolver = JsonConvert.DefaultSettings?.Invoke().ContractResolver as DefaultContractResolver;
+                    
+#endif
+
+                    
 
                     Func<string, string> getName = (propertyName) =>
                     {
-                        return (options.Value.SerializerSettings.ContractResolver as DefaultContractResolver)
+                        return contactResolver
                             ?.NamingStrategy?.GetPropertyName(propertyName, false) ?? propertyName;
                     };
 
@@ -1006,5 +1032,3 @@ namespace Kugar.Core.Web.ActionResult
         }
     }
 }
-
-#endif
