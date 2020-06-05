@@ -924,9 +924,22 @@ namespace Kugar.Core.Web.ActionResult
 
             var xmlFilePath = Path.Join( Path.GetDirectoryName(type.Assembly.Location),Path.GetFileNameWithoutExtension(type.Assembly.Location)+".xml");
 
+            if (!File.Exists(xmlFilePath))
+            {
+                return;
+            }
+
+
             var xml=new XmlDocument();
 
-            xml.Load(xmlFilePath);
+            try
+            {
+                xml.Load(xmlFilePath);
+            }
+            catch (Exception e)
+            {
+                return;
+            }
 
             var l1 = xml.GetElementsByTagName("member").AsEnumerable<XmlElement>();
 
@@ -935,7 +948,13 @@ namespace Kugar.Core.Web.ActionResult
                 .Select(x =>
                     new KeyValuePair<string, string>(
                         x.GetAttribute("name").Substring($"P:{type.FullName}".Length + 1).ToStringEx(),
-                        x.GetElementsByTagName("summary").AsEnumerable<XmlElement>().FirstOrDefault()?.InnerText.ToStringEx()));
+                        x.GetElementsByTagName("summary").AsEnumerable<XmlElement>().FirstOrDefault()?.InnerText.ToStringEx()))
+                .ToArrayEx();
+
+            if (!lst.HasData())
+            {
+                return;
+            }
 
             foreach (var item in lst)
             {
@@ -943,10 +962,10 @@ namespace Kugar.Core.Web.ActionResult
                 {
                     continue;
                 }
-                dic.Add(item.Key,item.Value.Trim());
+                dic.Add(item.Key,item.Value.ToStringEx().Trim());
             }
 
-            if (!type.IsInterface)
+            if (!type.IsInterface && type.BaseType!=null)
             {
                 if (type.BaseType != null && type.BaseType != typeof(object))
                 {
@@ -954,10 +973,14 @@ namespace Kugar.Core.Web.ActionResult
                 }
             }
 
-            foreach (var face in type.GetInterfaces())
+            if (type!=null)
             {
-                readXmlFile(face,dic);
+                foreach (var face in type.GetInterfaces())
+                {
+                    readXmlFile(face, dic);
+                }
             }
+            
         }
     }
 
