@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Kugar.Core.Web.Core3.Demo</name>
+    </assembly>
+    <members>
+        <member name="M:Kugar.Core.Web.Core3.Demo.Controllers.ApiTestController.TestValid(System.String)">
+            <summary>
+            /
+            </summary>
+            <param name="str1">sssss</param>
+            <returns></returns>
+        </member>
+        <member name="T:Kugar.Core.Web.Core3.Demo.Controllers.GenericTypeInnerValueTupleJsonConverter">
+            <summary>
+            用于在泛型类的参数中,带有ValueTuple的情况下使用
+            </summary>
+        </member>
+        <member name="M:Kugar.Core.Web.Core3.Demo.Controllers.GenericTypeInnerValueTupleJsonConverter.#ctor(System.Reflection.MethodInfo,Newtonsoft.Json.Serialization.NamingStrategy)">
+            <summary>
+            
+            </summary>
+            <param name="propertyInfo"></param>
+            <param name="genericParamterIndex">在泛型类的定义中所在的序号</param>
+            <param name="strategy"></param>
+        </member>
+    </members>
+</doc>

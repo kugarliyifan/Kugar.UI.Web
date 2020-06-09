@@ -2,7 +2,9 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Linq;
 using System.Reflection;
@@ -248,14 +250,41 @@ namespace Kugar.Core.Web
 
         protected bool Validate(object value, ModelBindingContext bindingContext)
         {
+            Debugger.Break();
+            
+
             if (bindingContext.ModelMetadata.ValidatorMetadata.Count > 0)
             {
                 var validResults = new List<ValidationResult>(bindingContext.ModelMetadata.ValidatorMetadata.Count);
 
                 var json = bindingContext.HttpContext.Items["__jsonData"];
 
-                if (!Validator.TryValidateValue(value, new ValidationContext(json), validResults,
-                    bindingContext.ModelMetadata.ValidatorMetadata.Select(x => (ValidationAttribute)x)))
+                var lst = bindingContext.ModelMetadata.ValidatorMetadata.Select(x => ((ValidationAttribute) x));
+
+                //foreach (var item in lst)
+                //{
+                //    item.Validate(value, bindingContext.FieldName);
+
+                //    if (item.IsValid(value))
+                //    {
+                //        item.GetValidationResult(value,new ValidationContext())
+                //    }
+
+                //    bindingContext.ModelState.AddModelError(bindingContext.FieldName, new ValidationException(result, null, value), bindingContext.ModelMetadata);
+                //}
+
+                var s = bindingContext.BindingSource;
+
+                var s1=bindingContext.ModelMetadata.GetDisplayName();
+
+                var s2 = bindingContext.ModelMetadata.Description;
+                var s3 = bindingContext.ModelMetadata as DefaultModelMetadata;
+
+                var desc = s3.Attributes.Attributes.FirstOrDefault(x => x is DescriptionAttribute) as DescriptionAttribute;
+
+
+
+                if (!Validator.TryValidateValue(value, new ValidationContext(json){MemberName = bindingContext.FieldName, DisplayName = desc?.Description?? bindingContext.FieldName }, validResults, lst))
                 {
                     foreach (var result in validResults)
                     {
@@ -309,6 +338,7 @@ namespace Kugar.Core.Web
 
         protected bool IsCaseSensitive => _isCaseSensitive;
     }
+
 
     internal class JsonModelBinder : JsonValueModelBinderBase
     {

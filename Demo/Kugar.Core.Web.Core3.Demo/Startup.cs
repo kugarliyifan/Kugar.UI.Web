@@ -1,14 +1,18 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Kugar.Core.ExtMethod;
+using Kugar.Core.Web.ActionResult;
 using Kugar.Core.Web.Core3.Demo.Controllers;
 using Kugar.Core.Web.Formatters;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,17 +34,32 @@ namespace Kugar.Core.Web.Core3.Demo
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+
+            services.Configure<RequestLocalizationOptions>(options =>
+            {
+                options.DefaultRequestCulture = new RequestCulture("zn-CN");
+                options.SetDefaultCulture("zn-CN");
+            });
+
+            services.AddLocalization();
+
+            services.AddHttpContextAccessor();
+
+            services.AddSession();
+
+            services.EnableSyncIO();
+
+
             services.AddControllersWithViews(opt =>
             {
                 opt.OutputFormatters.Insert(0,new ValueTupleOutputFormatter(x =>
                 {
                     x.NamingStrategy= new CamelCaseNamingStrategy(true,true);
                 }));
-            }).AddNewtonsoftJson().EnableJsonValueModelBinder();
+            }).AddNewtonsoftJson().EnableJsonValueModelBinder()
+                .AddDataAnnotationsLocalization();
+            ;
 
-            services.AddHttpContextAccessor();
-
-            services.AddSession();
 
             services.Configure<FileIOOption>(opt =>
             {
@@ -67,6 +86,14 @@ namespace Kugar.Core.Web.Core3.Demo
             }
             app.UseHttpsRedirection();
             app.UseStaticFiles();
+
+
+            app.Use(async (context, next) =>
+            {
+                Thread.CurrentThread.CurrentUICulture=new CultureInfo("zh-CN");;
+
+                await next();
+            });
 
             app.UseRouting();
 

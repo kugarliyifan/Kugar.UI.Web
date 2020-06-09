@@ -4,6 +4,10 @@
     <TargetFramework>netcoreapp3.0</TargetFramework>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>E:\项目源代码\Kugar.UI.Web\Demo\Kugar.Core.Web.Core3.Demo\Kugar.Core.Web.Core3.Demo.xml</DocumentationFile>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Remove="Controllers\CompositeContractResolver.cs" />
     <Compile Remove="Controllers\ValueTupleContractResolver.cs" />

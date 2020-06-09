@@ -32,29 +32,8 @@ namespace Kugar.Core.Web.Helpers
 
             if (!value.ModelState.IsValid)
             {
-                writer.WriteStartObject();
-
-                foreach (var modelStateKey in value.ModelState.Keys)
-                {
-                    if (value.ModelState.TryGetValue(modelStateKey,out var error))
-                    {
-                        writer.WritePropertyName(modelStateKey);
-
-                        writer.WriteStartArray();
-
-                        if (error.Errors.HasData())
-                        {
-                            foreach (var item in error.Errors)
-                            {
-                                writer.WriteValue(item.ErrorMessage);
-                            }
-                        }
-
-                        writer.WriteEndArray();
-                    }
-                }
-
-                writer.WriteEndObject();
+                serializer.Converters.Add(new ModelStateJsonConverter());
+                serializer.Serialize(writer,value.ModelState);
             }
             else
             {
@@ -67,6 +46,64 @@ namespace Kugar.Core.Web.Helpers
         }
 
         public override ModelStateErrorException ReadJson(JsonReader reader, Type objectType, ModelStateErrorException existingValue,
+            bool hasExistingValue, JsonSerializer serializer)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class ModelStateJsonConverter : JsonConverter<ModelStateDictionary>
+    {
+        public override void WriteJson(JsonWriter writer, ModelStateDictionary value, JsonSerializer serializer)
+        {
+            writer.WriteStartObject();
+
+            //foreach (var item in value)
+            //{
+            //    if (string.IsNullOrWhiteSpace(item.Key))
+            //    {
+            //        continue;
+            //    }
+
+            //    writer.WritePropertyName(item.Key);
+
+            //    writer.WriteStartArray();
+
+            //    if (value.ErrorCount>0)
+            //    {
+            //        foreach (var item in error.Errors)
+            //        {
+            //            writer.WriteValue(item.ErrorMessage);
+            //        }
+            //    }
+
+            //    writer.WriteEndArray();
+            //}
+
+            foreach (var modelStateKey in value.Keys)
+            {
+                if (value.TryGetValue(modelStateKey, out var error))
+                {
+                    writer.WritePropertyName(modelStateKey);
+
+                    writer.WriteStartArray();
+
+                    if (error.Errors.HasData())
+                    {
+                        foreach (var item in error.Errors)
+                        {
+                            writer.WriteValue(item.ErrorMessage);
+                        }
+                    }
+
+                    writer.WriteEndArray();
+                }
+            }
+
+            writer.WriteEndObject();
+        }
+
+        public override ModelStateDictionary ReadJson(JsonReader reader, Type objectType, ModelStateDictionary existingValue,
             bool hasExistingValue, JsonSerializer serializer)
         {
             throw new NotImplementedException();

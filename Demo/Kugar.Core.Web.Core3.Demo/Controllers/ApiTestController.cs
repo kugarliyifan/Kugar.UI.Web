@@ -1,13 +1,18 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Kugar.Core.BaseStruct;
 using Kugar.Core.ExtMethod;
+using Kugar.Core.Web.ActionResult;
+using Kugar.Core.Web.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Newtonsoft.Json;
@@ -20,9 +25,40 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
 {
     public class ApiTestController : ControllerBase
     {
+        /// <summary>
+        /// /
+        /// </summary>
+        /// <param name="str1">sssss</param>
+        /// <returns></returns>
+        [FromBodyJson,HttpPost]
+        public async Task<IActionResult> TestValid(
+            [Display(Name = "ssssss")][StringLength(100,MinimumLength = 6, ErrorMessageResourceType = typeof(Resources.ModelValidation)),Required] string str1
+        )
+        {
+            if (!ModelState.IsValid)
+            {
+                return new JsonResult(new FailResultReturn("")
+                {
+                    Error = new ModelStateErrorException(ModelState),
+                    ReturnCode = 10001
+                });
+            }
+
+            return null;
+        }
+
         [FromBodyJson()]
         public IActionResult test1(List<(string productid,int qty)> details)
         {
+            ModelState.AddModelError("sss","sdfsdfsdf");
+
+            return new JsonResult(new FailResultReturn("")
+            {
+                Error = new ModelStateErrorException(ModelState),
+                ReturnCode = 10001
+            });
+
+            return new ModelStateValidActionResult();
 
             return Content("success");
         }
