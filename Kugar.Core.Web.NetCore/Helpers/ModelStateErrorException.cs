@@ -82,6 +82,11 @@ namespace Kugar.Core.Web.Helpers
 
             foreach (var modelStateKey in value.Keys)
             {
+                if (string.IsNullOrWhiteSpace(modelStateKey))
+                {
+                    continue;
+                }
+
                 if (value.TryGetValue(modelStateKey, out var error))
                 {
                     writer.WritePropertyName(modelStateKey);
@@ -92,7 +97,7 @@ namespace Kugar.Core.Web.Helpers
                     {
                         foreach (var item in error.Errors)
                         {
-                            writer.WriteValue(item.ErrorMessage);
+                            writer.WriteValue(string.IsNullOrWhiteSpace(item.ErrorMessage)?item.Exception.Message:item.ErrorMessage);
                         }
                     }
 
