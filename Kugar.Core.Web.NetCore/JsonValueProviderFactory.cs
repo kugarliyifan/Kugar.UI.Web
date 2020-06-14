@@ -286,6 +286,8 @@ namespace Kugar.Core.Web
 
                 if (!Validator.TryValidateValue(value, new ValidationContext(json){MemberName = bindingContext.FieldName, DisplayName = desc?.Description?? bindingContext.FieldName }, validResults, lst))
                 {
+                    Debugger.Break();
+
                     foreach (var result in validResults)
                     {
                         bindingContext.ModelState.AddModelError(bindingContext.FieldName, new ValidationException(result, null, value), bindingContext.ModelMetadata);
@@ -357,9 +359,11 @@ namespace Kugar.Core.Web
             {
                 var value = jvalue?.ToObject(bindingContext.ModelType);
 
-                Validate(value, bindingContext);
+                if (!Validate(value, bindingContext))
+                {
+                    bindingContext.ModelState.SetModelValue(bindingContext.FieldName, value, value.ToStringEx());
+                }
 
-                bindingContext.ModelState.SetModelValue(bindingContext.FieldName, value, value.ToStringEx());
                 bindingContext.Result = ModelBindingResult.Success(value);
             }
             else
@@ -419,9 +423,12 @@ namespace Kugar.Core.Web
             {
                 var value = decodeJsonToValueTuple((JObject) jvalue,_modelType);
 
-                Validate(value, bindingContext);
+                if (!Validate(value, bindingContext))
+                {
+                    bindingContext.ModelState.SetModelValue(bindingContext.FieldName, value, value.ToStringEx());
+                }
 
-                bindingContext.ModelState.SetModelValue(bindingContext.FieldName, value, value.ToStringEx());
+                
                 bindingContext.Result = ModelBindingResult.Success(value);
             }
             else
@@ -506,18 +513,27 @@ namespace Kugar.Core.Web
                         array[i] = value;
                     }
 
-                    Validate(array, bindingContext);
+                    if (!Validate(array, bindingContext))
+                    {
+                        if (_isArray)
+                        {
+                            bindingContext.ModelState.SetModelValue(bindingContext.ModelName, array, array.ToStringEx());
+                        }
+                        else
+                        {
+                            var result = Activator.CreateInstance(ModelType, array);
+                            bindingContext.ModelState.SetModelValue(bindingContext.ModelName, result, result.ToStringEx());
+                        }
+                    }
 
                
                     if (_isArray)
                     {
-                        bindingContext.ModelState.SetModelValue(bindingContext.ModelName, array, array.ToStringEx());
                         bindingContext.Result = ModelBindingResult.Success(array);
                     }
                     else
                     {
                         var result = Activator.CreateInstance(ModelType, array);
-                        bindingContext.ModelState.SetModelValue(bindingContext.ModelName, result, result.ToStringEx());
                         bindingContext.Result = ModelBindingResult.Success(result);
                     }
 
