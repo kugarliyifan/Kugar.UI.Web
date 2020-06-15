@@ -28,12 +28,11 @@ namespace Kugar.Core.Web
             }
 
             var response = context.HttpContext.Response;
+            response.Clear();
 
             // 设置 HTTP Header 的 ContentType
             response.ContentType = "application/json";
-
-            response.Clear();
-
+            
             if (_data != null)
             {
                 await response.WriteAsync(JsonConvert.SerializeObject(_data), _encoding);
