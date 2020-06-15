@@ -32,7 +32,7 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
         /// <returns></returns>
         [FromBodyJson,HttpPost]
         public async Task<IActionResult> TestValid(
-            [Display(Name = "ssssss")][StringLength(100,MinimumLength = 6, ErrorMessageResourceType = typeof(Resources.ModelValidation)),Required] string str1
+            [Display(Name = "ssssss")][StringLength(100,MinimumLength = 6),Required] string str1
         )
         {
             if (!ModelState.IsValid)

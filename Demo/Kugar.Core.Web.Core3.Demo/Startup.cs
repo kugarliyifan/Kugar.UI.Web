@@ -57,7 +57,16 @@ namespace Kugar.Core.Web.Core3.Demo
                     x.NamingStrategy= new CamelCaseNamingStrategy(true,true);
                 }));
             }).AddNewtonsoftJson().EnableJsonValueModelBinder()
-                .AddDataAnnotationsLocalization();
+                .AddDataAnnotationsLocalization(opt =>
+                {
+                    opt.DataAnnotationLocalizerProvider = (type, factory) =>
+                    {
+                        var loc= factory.Create(type).WithCulture(Thread.CurrentThread.CurrentUICulture);
+
+                        return loc;
+                        return null;
+                    };
+                });
             ;
 
 
