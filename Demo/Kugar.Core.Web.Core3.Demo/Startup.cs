@@ -19,6 +19,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using NJsonSchema;
+using NSwag;
+using NSwag.Generation.Processors;
+using NSwag.Generation.Processors.Security;
 
 namespace Kugar.Core.Web.Core3.Demo
 {
@@ -48,6 +52,58 @@ namespace Kugar.Core.Web.Core3.Demo
             services.AddSession();
 
             services.EnableSyncIO();
+
+            services.EnableSyncIO().AddSwaggerDocument(opt =>
+            {
+                //opt.DocumentName = "api";
+               // opt.ApiGroupNames = new[] { "wxapi" };
+                opt.DocumentName = "wxapi";
+                opt.Title = "微信小程序接口";
+
+                opt.UseJsonTemplate(typeof(Startup).Assembly);
+                opt.PostProcess = (doc) =>
+                {
+                    doc.Consumes = new string[] { "application/json" };
+                    doc.Produces = new string[] { "application/json" };
+                };
+
+                opt.DocumentProcessors.Add(new SecurityDefinitionAppender("Authorization", new OpenApiSecurityScheme()
+                {
+                    Type = OpenApiSecuritySchemeType.ApiKey,
+                    Name = "Authorization",
+                    In = OpenApiSecurityApiKeyLocation.Header,
+                    Description = "授权token",
+
+                }));
+
+                opt.UseJsonTemplate(typeof(Startup).Assembly);
+
+                opt.OperationProcessors.Add(new OperationProcessor((context) =>
+                {
+                    foreach (var parameter in context.Parameters)
+                    {
+                        if (parameter.Key.ParameterType.ToStringEx().Contains("ValueTuple"))
+                        {
+                            parameter.Value.Type = JsonObjectType.Array;
+                            parameter.Value.Items.Add(new JsonSchema()
+                            {
+                                Properties =
+                                {
+                                    [""]=new JsonSchemaProperty()
+                                    {
+                                        Type = JsonObjectType.String,
+                                    }
+                                }
+                            });
+
+                            parameter.Value.Name = parameter.Key.Name;
+
+                        }
+                    }
+
+                    return true;
+                }));
+            });
 
 
             services.AddControllersWithViews(opt =>
@@ -111,6 +167,17 @@ namespace Kugar.Core.Web.Core3.Demo
             app.UseAuthorization();
 
             app.UseStaticHttpContext();
+
+            app.UseOpenApi();       // serve OpenAPI/Swagger documents
+
+            app.UseSwaggerUi3();    // serve Swagger UI
+
+            app.UseSwaggerUi3(config =>  // serve ReDoc UI
+            {
+                // 這裡的 Path 用來設定 ReDoc UI 的路由 (網址路徑) (一定要以 / 斜線開頭)
+                config.Path = "/swager";
+
+            });
 
             app.UseEndpoints(endpoints =>
             {

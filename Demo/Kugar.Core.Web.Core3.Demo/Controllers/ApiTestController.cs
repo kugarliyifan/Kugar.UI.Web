@@ -23,16 +23,19 @@ using ValueTuple = System.ValueTuple;
 
 namespace Kugar.Core.Web.Core3.Demo.Controllers
 {
+    [Route("apitest/[action]")]
     public class ApiTestController : ControllerBase
     {
         /// <summary>
-        /// /
+        /// fsdfsfs
         /// </summary>
         /// <param name="str1">sssss</param>
+        /// <param name="tupleTest">ddddddddddd</param>
         /// <returns></returns>
         [FromBodyJson,HttpPost]
         public async Task<IActionResult> TestValid(
-            [Display(Name = "ssssss")][StringLength(100,MinimumLength = 6),Required] string str1
+            [Display(Name = "ssssss")][StringLength(100,MinimumLength = 6),Required] string str1,
+             (string key1,string key2) tupleTest
         )
         {
             if (!ModelState.IsValid)
@@ -62,6 +65,8 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
 
             return Content("success");
         }
+
+
 
         public ResultReturn<(string str1, int int3)> Test()
         {
