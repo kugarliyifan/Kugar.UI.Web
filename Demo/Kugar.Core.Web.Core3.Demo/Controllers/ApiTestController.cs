@@ -51,7 +51,7 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
         }
 
         [FromBodyJson()]
-        public IActionResult test1(List<(string productid,int qty)> details)
+        public IActionResult test1(/*List<(string productid,int qty)> details*/)
         {
             ModelState.AddModelError("sss","sdfsdfsdf");
 

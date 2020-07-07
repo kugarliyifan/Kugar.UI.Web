@@ -256,49 +256,44 @@ namespace Kugar.Core.Web
             if (bindingContext.ModelMetadata.ValidatorMetadata.Count > 0)
             {
                 var validResults = new List<ValidationResult>(bindingContext.ModelMetadata.ValidatorMetadata.Count);
-
+                
                 var json = bindingContext.HttpContext.Items["__jsonData"];
 
                 var lst = bindingContext.ModelMetadata.ValidatorMetadata.Select(x => ((ValidationAttribute) x));
 
-                //foreach (var item in lst)
-                //{
-                //    item.Validate(value, bindingContext.FieldName);
-
-                //    if (item.IsValid(value))
-                //    {
-                //        item.GetValidationResult(value,new ValidationContext())
-                //    }
-
-                //    bindingContext.ModelState.AddModelError(bindingContext.FieldName, new ValidationException(result, null, value), bindingContext.ModelMetadata);
-                //}
-
-                var s = bindingContext.BindingSource;
-
-                var s1=bindingContext.ModelMetadata.GetDisplayName();
-
-                var s2 = bindingContext.ModelMetadata.Description;
                 var s3 = bindingContext.ModelMetadata as DefaultModelMetadata;
 
                 var desc = s3.Attributes.Attributes.FirstOrDefault(x => x is DescriptionAttribute) as DescriptionAttribute;
 
+                var isValid = true;
 
-
-                if (!Validator.TryValidateValue(value, new ValidationContext(json){MemberName = bindingContext.FieldName, DisplayName = desc?.Description?? bindingContext.FieldName }, validResults, lst))
+                foreach (var validator in lst)
                 {
-                    Debugger.Break();
-
-                    foreach (var result in validResults)
+                    if (!validator.IsValid(value))
                     {
-                        bindingContext.ModelState.AddModelError(bindingContext.FieldName, new ValidationException(result, null, value), bindingContext.ModelMetadata);
+                        isValid = false;
+                        bindingContext.ModelState.AddModelError(bindingContext.FieldName, new ValidationException(new ValidationResult(string.Format(validator.ErrorMessage, desc?.Description ?? bindingContext.FieldName)), null, value), bindingContext.ModelMetadata);
                     }
+                }
 
-                    return false;
-                }
-                else
-                {
-                    return true;
-                }
+                return isValid;
+                
+               
+                //if (!Validator.TryValidateValue(value, new ValidationContext(json){MemberName = bindingContext.FieldName, DisplayName = desc?.Description?? bindingContext.FieldName }, validResults, lst))
+                //{
+                //    Debugger.Break();
+
+                //    foreach (var result in validResults)
+                //    {
+                //        bindingContext.ModelState.AddModelError(bindingContext.FieldName, new ValidationException(result, null, value), bindingContext.ModelMetadata);
+                //    }
+
+                //    return false;
+                //}
+                //else
+                //{
+                //    return true;
+                //}
             }
 
             return true;
@@ -310,20 +305,23 @@ namespace Kugar.Core.Web
             {
                 var json = (JObject)item;
 
-                if (json?.ContainsKey(bindingContext.FieldName)!=true)
+                if (json!=null && json.TryGetValue(bindingContext.FieldName,_isCaseSensitive?StringComparison.CurrentCulture: StringComparison.InvariantCultureIgnoreCase,out value))
+                {
+                    
+                }
+                else
                 {
                     value = null;
                     return false;
                 }
-
-                if (_isCaseSensitive)
-                {
-                    value = json?.GetValue(bindingContext.FieldName);
-                }
-                else
-                {
-                    value = json?.GetValue(bindingContext.FieldName, StringComparison.InvariantCultureIgnoreCase);
-                }
+                //if (_isCaseSensitive)
+                //{
+                //    value = json?.GetValue(bindingContext.FieldName);
+                //}
+                //else
+                //{
+                //    value = json?.GetValue(bindingContext.FieldName, StringComparison.InvariantCultureIgnoreCase);
+                //}
 
                 return true;
             }

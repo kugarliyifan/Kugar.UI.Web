@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -84,20 +86,28 @@ namespace Kugar.Core.Web.Core3.Demo
                     {
                         if (parameter.Key.ParameterType.ToStringEx().Contains("ValueTuple"))
                         {
-                            parameter.Value.Type = JsonObjectType.Array;
-                            parameter.Value.Items.Add(new JsonSchema()
+                            
+                            context.OperationDescription.Operation.Parameters.RemoveAt((int)parameter.Value.Position);
+                            
+                            parameter.Value.Type = JsonObjectType.Object;
+
+                            var attr = (TupleElementNamesAttribute)parameter.Key.GetCustomAttributes(typeof(TupleElementNamesAttribute), true).FirstOrDefault();
+
+                            var t = parameter.Key.ParameterType.GetGenericArguments();
+                            
+                            for (int i = 0; i < attr.TransformNames.Count; i++)
                             {
-                                Properties =
+                                parameter.Value.Properties.Add( attr.TransformNames[i],new JsonSchemaProperty()
                                 {
-                                    [""]=new JsonSchemaProperty()
-                                    {
-                                        Type = JsonObjectType.String,
-                                    }
-                                }
-                            });
+                                    Type = netTypeToJsonObjectType(t[i]),
+                                    
+                                    IsNullableRaw = !t[i].IsValueType,
+                                });
+                            }
 
                             parameter.Value.Name = parameter.Key.Name;
 
+                            
                         }
                     }
 
@@ -134,6 +144,11 @@ namespace Kugar.Core.Web.Core3.Demo
                 };
                 opt.IncludeHost = true;
             });
+        }
+
+        private JsonObjectType netTypeToJsonObjectType(Type type)
+        {
+            return JsonObjectType.String;
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

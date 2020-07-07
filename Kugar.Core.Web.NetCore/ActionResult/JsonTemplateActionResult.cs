@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Threading.Tasks;
 using Fasterflect;
 using Kugar.Core.BaseStruct;
@@ -79,7 +80,72 @@ namespace Kugar.Core.Web.ActionResult
             
         }
 
+
+        public virtual void Build()
+        {
+
+        }
     }
+
+    public class StaticJsonTemplateActionResult<TModel> : IJsonTemplateActionResult
+    {
+        public Task ExecuteResultAsync(ActionContext context)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void GetNSwag(JsonSchemaGenerator generator, JsonSchemaResolver resolver, JsonObjectSchemeBuilder builder)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    //public class StaticJsonBuilder<TModel>
+    //{
+
+
+    //    public void Build()
+    //    {
+
+    //    }
+
+    //    public JsonSchemaGenerator SchemaGenerator { set; get; }
+
+    //    public JsonSchemaResolver SchemaResolver { set; get; }
+
+    //    public StaticJsonBuilder<TModel> AddProperty<TValue>(string propertyName, JsonObjectType type, string desciption, JsonValueFactory<TModel,TValue> valueFactory, object example = null,
+    //        bool nullable = false)
+    //    {
+    //        return this;
+    //    }
+
+    //    public StaticJsonBuilder<TModel> AddProperty<TInput,TValue>(TInput model, Expression<Func<TInput, object>> propertyExpr,
+    //        JsonValueFactory<TModel, TValue> valueFactory=null, object example = null,
+    //        bool nullable = false)
+    //    {
+    //        Expression<JsonValueFactory<TModel, TValue>> bind = Expression.Lambda<>((x) => valueFactory(x));
+
+    //        Expression expr = Expression.Invoke(bind, Expression.Constant(5));
+
+    //        var s = new DynamicMethod("ss", typeof(void), new[] {typeof(JsonWriter), typeof(TModel)});
+
+    //        s.
+
+    //        return this;
+    //    }
+
+    //    public StaticJsonBuilder<TModel> AddObject(string propertyName)
+    //    {
+    //        return this;
+    //    }
+
+    //    public StaticJsonBuilder<TModel> AddArray(string propertyName)
+    //    {
+    //        return this;
+    //    }
+    //}
+
+    public delegate TValue JsonValueFactory<TModel, TValue>(TModel Model);
 
     public class JsonTemplateBuilder
     {
