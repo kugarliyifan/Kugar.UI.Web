@@ -87,18 +87,18 @@ namespace Kugar.Core.Web.ActionResult
         }
     }
 
-    public class StaticJsonTemplateActionResult<TModel> : IJsonTemplateActionResult
-    {
-        public Task ExecuteResultAsync(ActionContext context)
-        {
-            throw new NotImplementedException();
-        }
+    //public class StaticJsonTemplateActionResult<TModel> : IJsonTemplateActionResult
+    //{
+    //    public Task ExecuteResultAsync(ActionContext context)
+    //    {
+    //        throw new NotImplementedException();
+    //    }
 
-        public void GetNSwag(JsonSchemaGenerator generator, JsonSchemaResolver resolver, JsonObjectSchemeBuilder builder)
-        {
-            throw new NotImplementedException();
-        }
-    }
+    //    public void GetNSwag(JsonSchemaGenerator generator, JsonSchemaResolver resolver, JsonObjectSchemeBuilder builder)
+    //    {
+    //        throw new NotImplementedException();
+    //    }
+    //}
 
     //public class StaticJsonBuilder<TModel>
     //{
@@ -145,7 +145,7 @@ namespace Kugar.Core.Web.ActionResult
     //    }
     //}
 
-    public delegate TValue JsonValueFactory<TModel, TValue>(TModel Model);
+    //public delegate TValue JsonValueFactory<TModel, TValue>(TModel Model);
 
     public class JsonTemplateBuilder
     {
@@ -809,7 +809,7 @@ namespace Kugar.Core.Web.ActionResult
             return this;
         }
 
-        public JsonObjectSchemeBuilderWithType<T> With<T>() where T : class
+        public JsonObjectSchemeBuilderWithType<T> With<T>()  
         {
             return new JsonObjectSchemeBuilderWithType<T>(this,_properties,_getPropertyTitle);
         }
@@ -822,7 +822,16 @@ namespace Kugar.Core.Web.ActionResult
             //}
         }
 
-        protected JsonObjectType _typeToJsonObjectType(Type type)
+        public IDictionary<string, JsonSchemaProperty> Properties
+        {
+            get => _properties;
+            set
+            {
+                _properties = value;
+            }
+        }
+
+        public JsonObjectType _typeToJsonObjectType(Type type)
         {
             if (type.IsGenericType && type.GetGenericTypeDefinition()== typeof(Nullable<>))
             {

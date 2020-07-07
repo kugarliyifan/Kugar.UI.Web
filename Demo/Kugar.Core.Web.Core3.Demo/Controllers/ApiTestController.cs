@@ -66,7 +66,20 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
             return Content("success");
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        [ProducesResponseType(typeof(TestJsonTemplate1),200)]
+        public async Task<IActionResult> test2()
+        {
+            var view=new TestJsonTemplate1()
+            {
+                Model = new Test<string, int>("ddddd",2)
+            };
 
+            return view;
+        }
 
         public ResultReturn<(string str1, int int3)> Test()
         {
@@ -96,6 +109,20 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
         public T1 Prop1 { set; get; }
 
         public (string sss2, string ppp) Prop3 { set; get; } = ("33333", "4444");
+    }
+
+    public class TestJsonTemplate1 : StaticJsonBuilder<Test<string,int>>
+    {
+        protected override void BuildSchema()
+        {
+            this.AddPropertyFrom(x => x, x => x.Prop1, x => x.Prop2);
+
+            this.AddObject("prop3", "sdfsfdsf")
+                .AddPropertyFrom(x => x.Prop3, x => x.ppp, x => x.sss2)
+                .AddProperty(x=>x.Prop2)
+                .End();
+
+        }
     }
 
     //public class A : DefaultContractResolver
