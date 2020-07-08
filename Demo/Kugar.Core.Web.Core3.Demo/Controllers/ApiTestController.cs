@@ -67,7 +67,7 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
         }
 
         /// <summary>
-        /// 
+        /// ppppp
         /// </summary>
         /// <returns></returns>
         [ProducesResponseType(typeof(TestJsonTemplate1),200)]
@@ -79,6 +79,21 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
             };
 
             return view;
+        }
+
+        /// <summary>
+        /// oooo
+        /// </summary>
+        /// <returns></returns>
+        [ProducesResponseType(typeof(TestJsonTemplate2),200)]
+        public async Task<IActionResult> Test3()
+        {
+            var v=new TestJsonTemplate2()
+            {
+                Model = new Test<string, string>("iiii","oooo")
+            };
+
+            return v;
         }
 
         public ResultReturn<(string str1, int int3)> Test()
@@ -115,13 +130,25 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
     {
         protected override void BuildSchema()
         {
-            this.AddPropertyFrom(x => x, x => x.Prop1, x => x.Prop2);
+            this.AddProperty(x => x.Prop1,"属性1")
+                .AddProperty(x=>x.Prop2)
+                ;
 
             this.AddObject("prop3", "sdfsfdsf")
                 .AddPropertyFrom(x => x.Prop3, x => x.ppp, x => x.sss2)
                 .AddProperty(x=>x.Prop2)
                 .End();
 
+        }
+    }
+
+    public class TestJsonTemplate2 : StaticJsonBuilder<Test<string, string>>
+    {
+        protected override void BuildSchema()
+        {
+            this.AddProperty("prop2",x=>x.Prop2,"sdfsfsf");
+
+            this.AddProperty("prop3", x => x.Prop1, "测试属性2");
         }
     }
 

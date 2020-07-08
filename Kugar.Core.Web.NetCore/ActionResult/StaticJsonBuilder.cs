@@ -37,6 +37,30 @@ namespace Kugar.Core.Web.ActionResult
             return props.ToArray();
         }
 
+        protected MemberExpression getMemberExpr<T1, T2>(Expression<Func<T1, T2>> expression)
+        {
+            if (expression.Body.NodeType == ExpressionType.Convert)
+            {
+                var p = expression.Body as UnaryExpression;
+
+                if (p.Operand is MemberExpression m1)
+                {
+                    return m1;
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException(nameof(expression), $"表达式{expression.Body.ToString()}无效");
+                }
+
+            }
+            else if (expression.Body is MemberExpression m)
+            {
+                return m;
+            }
+
+            throw new ArgumentException();
+        }
+
         protected string getPropName<T1, T2>(Expression<Func<T1, T2>> expression)
         {
             if (expression.Body.NodeType == ExpressionType.Convert)
@@ -179,17 +203,19 @@ namespace Kugar.Core.Web.ActionResult
         /// <param name="example"></param>
         /// <param name="nullable"></param>
         /// <returns></returns>
-        public JsonSchemaObjectBuilder<TModel> AddProperty<TValue>(string propertyName, JsonValueFactory<TModel, TValue> valueFactory, string desciption="",/* JsonObjectType type,*/  object example = null,
+        public JsonSchemaObjectBuilder<TModel> AddProperty<TValue>(string propertyName,Expression<Func<TModel,TValue>> valueFactory, string desciption="",/* JsonObjectType type,*/  object example = null,
             bool? nullable = null)
         {
             Debug.Assert(!string.IsNullOrWhiteSpace(propertyName));
             Debug.Assert(valueFactory!=null);
 
+            var valueFunc = valueFactory.Compile();
+
             PipeAction<TModel> s =async (writer, model) =>
             {
                 await writer.WritePropertyNameAsync(propertyName);
 
-                var value =await valueFactory(model);
+                var value = valueFunc(model);
 
                 await writer.WriteValueAsync(value);
             };
@@ -267,31 +293,34 @@ namespace Kugar.Core.Web.ActionResult
         /// </summary>
         /// <param name="propertyExpr"></param>
         /// <returns></returns>
-        public JsonSchemaObjectBuilder<TModel> AddProperty(Expression<Func<TModel, object>> propertyExpr)
+        public JsonSchemaObjectBuilder<TModel> AddProperty(params Expression<Func<TModel, object>>[] propertyExpr)
         {
-            //if (!propertyExpr.HasData())
-            //{
-            //    return this;
-            //}
+            if (!propertyExpr.HasData())
+            {
+                return this;
+            }
 
-            var funcList = new List<(string properyName, Func<TModel, object> valueCaller)>();
+            var funcList = new List<(string propertyName, Func<TModel, object> valueCaller)>();
+
 
             var typeBuilder = _parentSchemaBulder.With<TModel>();
 
-            //foreach (var item in propertyExpr)
-            //{
-                var caller = propertyExpr;
+            foreach (var item in propertyExpr)
+            {
+                var caller = item;
 
-                var properyName = getPropName(caller);
+                var propertyName = getPropName(caller);
 
-                var callerReturnType = getExprReturnType(propertyExpr);
+                //var memberExpr = getMemberExpr(caller);
 
-                var t = propertyExpr.Compile();
+                var callerReturnType = getExprReturnType(caller);
 
-                typeBuilder.Property(propertyExpr, type: _parentSchemaBulder._typeToJsonObjectType(callerReturnType), nullable: isNullable(callerReturnType));
+                var t = caller.Compile();
 
-                funcList.Add((properyName, t));
-            //}
+                typeBuilder.Property(caller, type: _parentSchemaBulder._typeToJsonObjectType(callerReturnType), nullable: isNullable(callerReturnType));
+
+                funcList.Add((propertyName, t));
+            }
 
             typeBuilder.End();
 
@@ -299,7 +328,7 @@ namespace Kugar.Core.Web.ActionResult
             {
                 foreach (var item in funcList)
                 {
-                    await writer.WritePropertyNameAsync(item.properyName);
+                    await writer.WritePropertyNameAsync(item.propertyName);
 
                     var v = item.valueCaller(model);
 
@@ -311,6 +340,53 @@ namespace Kugar.Core.Web.ActionResult
 
             return this;
         }
+
+        /// <summary>
+        /// 添加单个字段
+        /// </summary>
+        /// <param name="propertyExpr"></param>
+        /// <returns></returns>
+        public JsonSchemaObjectBuilder<TModel> AddProperty(Expression<Func<TModel, object>> propertyExpr,string desciption)
+        {
+
+            //var funcList = new List<(string propertyName, Func<TModel, object> valueCaller)>();
+
+
+            var typeBuilder = _parentSchemaBulder.With<TModel>();
+
+            
+            var caller = propertyExpr;
+
+            var propertyName = getPropName(caller);
+
+            //var memberExpr = getMemberExpr(caller);
+
+            var callerReturnType = getExprReturnType(caller);
+
+            var valueFunc = caller.Compile();
+
+            typeBuilder.Property(caller, type: _parentSchemaBulder._typeToJsonObjectType(callerReturnType), nullable: isNullable(callerReturnType));
+
+
+            typeBuilder.End();
+
+            PipeAction<TModel> s = async (writer, model) =>
+            {
+                //foreach (var item in funcList)
+                //{
+                    await writer.WritePropertyNameAsync(propertyName);
+
+                    var v = valueFunc(model);
+
+                    await writer.WriteValueAsync(v);
+                //}
+            };
+
+            _lst.Add(s);
+
+            return this;
+        }
+
 
         /// <summary>
         /// 添加一个值数组,,用于不需要单独处理每个类中字段信息的情况
@@ -547,7 +623,7 @@ namespace Kugar.Core.Web.ActionResult
 
 
 
-    public delegate Task<TValue> JsonValueFactory<in TModel, TValue>(TModel Model);
+    public delegate Task<TValue> JsonValueFactory<in TModel, TValue>(TModel model);
 
     public abstract class StaticJsonBuilder<TModel> : JsonSchemaObjectBuilder<TModel>, IJsonTemplateActionResult
     {
@@ -587,8 +663,8 @@ namespace Kugar.Core.Web.ActionResult
 
             var data = "";
 
-            using var stream = new MemoryStream();
-            using var textWriter = new StreamWriter(stream);
+            using (var stream = new MemoryStream())
+            using (var textWriter = new StreamWriter(stream))
             using (var writer = new JsonTextWriter(textWriter))
             {
                 //writer.WriteStartObject();

@@ -899,7 +899,7 @@ namespace Kugar.Core.Web.ActionResult
         /// <returns></returns>
         public JsonObjectSchemeBuilderWithType<T> Property<TValue>(Expression<Func<T, TValue>> property, string newPropertyName = null, JsonObjectType? type = null,object example=null,bool nullable = false)
         {
-            var body = property.Body as MemberExpression;
+            var body = getMemberExpr(property);
 
             if (body==null)
             {
@@ -1057,6 +1057,30 @@ namespace Kugar.Core.Web.ActionResult
             }
             
         }
+
+        protected MemberExpression getMemberExpr<T1, T2>(Expression<Func<T1, T2>> expression)
+        {
+            if (expression.Body.NodeType == ExpressionType.Convert)
+            {
+                var p = expression.Body as UnaryExpression;
+
+                if (p.Operand is MemberExpression m1)
+                {
+                    return m1;
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException(nameof(expression), $"表达式{expression.Body.ToString()}无效");
+                }
+
+            }
+            else if (expression.Body is MemberExpression m)
+            {
+                return m;
+            }
+
+            throw new ArgumentException();
+        }
     }
 
     public static class JsonTemplateHelper
@@ -1118,10 +1142,12 @@ namespace Kugar.Core.Web.ActionResult
 
                     var builder = new JsonObjectSchemeBuilder(scheme.Properties, getName);
 
-                    var tmp = Activator.CreateInstance(t);
+                    var tmp = Activator.CreateInstance(t) as IJsonTemplateActionResult;
 
-                    Fasterflect.MethodExtensions.CallMethod(tmp, "GetNSwag", gen,
-                        resolver, builder);
+                    tmp.GetNSwag(gen,resolver,builder);
+
+                    //Fasterflect.MethodExtensions.CallMethod(tmp, "GetNSwag", gen,
+                    //    resolver, builder);
 
                     return scheme;
 

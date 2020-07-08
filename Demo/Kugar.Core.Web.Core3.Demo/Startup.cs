@@ -62,6 +62,8 @@ namespace Kugar.Core.Web.Core3.Demo
                 opt.DocumentName = "wxapi";
                 opt.Title = "微信小程序接口";
 
+                AppDomain.CurrentDomain.GetAssemblies();
+
                 opt.UseJsonTemplate(typeof(Startup).Assembly);
                 opt.PostProcess = (doc) =>
                 {
@@ -78,41 +80,41 @@ namespace Kugar.Core.Web.Core3.Demo
 
                 }));
 
-                opt.UseJsonTemplate(typeof(Startup).Assembly);
+                //opt.UseJsonTemplate(typeof(Startup).Assembly);
 
-                opt.OperationProcessors.Add(new OperationProcessor((context) =>
-                {
-                    foreach (var parameter in context.Parameters)
-                    {
-                        if (parameter.Key.ParameterType.ToStringEx().Contains("ValueTuple"))
-                        {
+                //opt.OperationProcessors.Add(new OperationProcessor((context) =>
+                //{
+                //    foreach (var parameter in context.Parameters)
+                //    {
+                //        if (parameter.Key.ParameterType.ToStringEx().Contains("ValueTuple"))
+                //        {
                             
-                            context.OperationDescription.Operation.Parameters.RemoveAt((int)parameter.Value.Position);
+                //            context.OperationDescription.Operation.Parameters.RemoveAt((int)parameter.Value.Position);
                             
-                            parameter.Value.Type = JsonObjectType.Object;
+                //            parameter.Value.Type = JsonObjectType.Object;
 
-                            var attr = (TupleElementNamesAttribute)parameter.Key.GetCustomAttributes(typeof(TupleElementNamesAttribute), true).FirstOrDefault();
+                //            var attr = (TupleElementNamesAttribute)parameter.Key.GetCustomAttributes(typeof(TupleElementNamesAttribute), true).FirstOrDefault();
 
-                            var t = parameter.Key.ParameterType.GetGenericArguments();
+                //            var t = parameter.Key.ParameterType.GetGenericArguments();
                             
-                            for (int i = 0; i < attr.TransformNames.Count; i++)
-                            {
-                                parameter.Value.Properties.Add( attr.TransformNames[i],new JsonSchemaProperty()
-                                {
-                                    Type = netTypeToJsonObjectType(t[i]),
+                //            for (int i = 0; i < attr.TransformNames.Count; i++)
+                //            {
+                //                parameter.Value.Properties.Add( attr.TransformNames[i],new JsonSchemaProperty()
+                //                {
+                //                    Type = netTypeToJsonObjectType(t[i]),
                                     
-                                    IsNullableRaw = !t[i].IsValueType,
-                                });
-                            }
+                //                    IsNullableRaw = !t[i].IsValueType,
+                //                });
+                //            }
 
-                            parameter.Value.Name = parameter.Key.Name;
+                //            parameter.Value.Name = parameter.Key.Name;
 
                             
-                        }
-                    }
+                //        }
+                //    }
 
-                    return true;
-                }));
+                //    return true;
+                //}));
             });
 
 
