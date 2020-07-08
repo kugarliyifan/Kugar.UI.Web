@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq.Expressions;
@@ -8,9 +10,13 @@ using System.Text;
 using System.Threading.Tasks;
 using Kugar.Core.ExtMethod;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using NJsonSchema;
 using NJsonSchema.Generation;
+using NSwag;
+using NSwag.AspNetCore;
+using NSwag.Generation.AspNetCore;
 
 namespace Kugar.Core.Web.ActionResult
 {
@@ -143,21 +149,24 @@ namespace Kugar.Core.Web.ActionResult
 
     public class JsonSchemaObjectBuilder<TModel> : StaticJsonBuilderBase, IDisposable
     {
-        private List<PipeAction<TModel>> _lst = null;
+        private static ConcurrentDictionary<Type, List<PipeAction<TModel>>> _cacheActionList = new ConcurrentDictionary<Type, List<PipeAction<TModel>>>();
         private JsonObjectSchemeBuilder _parentSchemaBulder = null;
+        private List<PipeAction<TModel>> _currentList = null;
+
 
         public JsonSchemaObjectBuilder(List<PipeAction<TModel>> lst, JsonObjectSchemeBuilder schemaBuilder)
         {
-            _lst = lst;
+            _currentList = lst;
             _parentSchemaBulder = schemaBuilder;
         }
+
 
         //public JsonSchemaObjectBuilder()
         //{
         //    _lst = getJsonActionsList(this.GetType());
         //}
 
-        internal JsonObjectSchemeBuilder SchemaBulder
+        internal JsonObjectSchemeBuilder SchemaBuilder
         {
             set
             {
@@ -171,11 +180,17 @@ namespace Kugar.Core.Web.ActionResult
 
         internal List<PipeAction<TModel>> ActionList
         {
-            get => _lst;
-            set
+            get
             {
-                _lst = value;
+                return _currentList??_cacheActionList.GetOrAdd(this.GetType(), x =>
+                {
+                    return new List<PipeAction<TModel>>();
+                });
             }
+            //set
+            //{
+            //    _lst = value;
+            //}
         }
 
         protected JsonSchemaGenerator Generator { set; get; }
@@ -185,7 +200,7 @@ namespace Kugar.Core.Web.ActionResult
 
         public JsonSchemaObjectBuilder<TModel> Start()
         {
-            _lst.Add(async (writer, model) =>
+            ActionList.Add(async (writer, model) =>
             {
                 await writer.WriteStartObjectAsync();
             });
@@ -223,7 +238,7 @@ namespace Kugar.Core.Web.ActionResult
             _parentSchemaBulder.AddProperty(propertyName, _parentSchemaBulder._typeToJsonObjectType(typeof(TValue)), desciption,
                 example: example,nullable ?? isNullable(typeof(TValue)));
 
-            _lst.Add(s);
+            ActionList.Add(s);
 
             return this;
         }
@@ -283,7 +298,7 @@ namespace Kugar.Core.Web.ActionResult
                 }
             };
 
-            _lst.Add(s);
+            ActionList.Add(s);
 
             return this;
         }
@@ -336,7 +351,7 @@ namespace Kugar.Core.Web.ActionResult
                 }
             };
 
-            _lst.Add(s);
+            ActionList.Add(s);
 
             return this;
         }
@@ -365,7 +380,7 @@ namespace Kugar.Core.Web.ActionResult
 
             var valueFunc = caller.Compile();
 
-            typeBuilder.Property(caller, type: _parentSchemaBulder._typeToJsonObjectType(callerReturnType), nullable: isNullable(callerReturnType));
+            typeBuilder.Property(caller, type: _parentSchemaBulder._typeToJsonObjectType(callerReturnType),desciption: desciption, nullable: isNullable(callerReturnType));
 
 
             typeBuilder.End();
@@ -382,7 +397,7 @@ namespace Kugar.Core.Web.ActionResult
                 //}
             };
 
-            _lst.Add(s);
+            ActionList.Add(s);
 
             return this;
         }
@@ -419,7 +434,7 @@ namespace Kugar.Core.Web.ActionResult
                 await writer.WriteEndArrayAsync();
             };
 
-            _lst.Add(s);
+            ActionList.Add(s);
 
             return this;
         }
@@ -434,7 +449,7 @@ namespace Kugar.Core.Web.ActionResult
         {
             if (!string.IsNullOrWhiteSpace(propertyName))
             {
-                _lst.Add(async (writer, _) =>
+                ActionList.Add(async (writer, _) =>
                 {
                     await writer.WritePropertyNameAsync(propertyName);
                 });
@@ -446,7 +461,7 @@ namespace Kugar.Core.Web.ActionResult
 
             var c=_parentSchemaBulder.AddObjectProperty(propertyName, desciption);
 
-            var s = new JsonSchemaObjectBuilder<TModel>(_lst, c);
+            var s = new JsonSchemaObjectBuilder<TModel>(ActionList, c);
 
             s.Start();
 
@@ -483,11 +498,11 @@ namespace Kugar.Core.Web.ActionResult
         /// <param name="loopValueFactory">获取数据列表的函数</param>
         /// <param name="desciption">备注</param>
         /// <returns></returns>
-        public JsonSchemaArrayBuilder<TModel, TElement> AddArrayObject<TElement>(string propertyName, Expression<Func<TModel, Task<IEnumerable<TElement>>>> loopValueFactory, string desciption="")
+        public JsonSchemaObjectBuilder<TElement> AddArrayObject<TElement>(string propertyName, Expression<Func<TModel, IEnumerable<TElement>>> loopValueFactory, string desciption="")
         {
             if (!string.IsNullOrWhiteSpace(propertyName))
             {
-                _lst.Add(async (writer, _) =>
+                ActionList.Add(async (writer, _) =>
                 {
                     await writer.WritePropertyNameAsync(propertyName);
                 });
@@ -499,9 +514,13 @@ namespace Kugar.Core.Web.ActionResult
 
             var s1 = _parentSchemaBulder.AddArrayProperty(propertyName, desciption: desciption);
 
-            var s = new JsonSchemaArrayBuilder<TModel, TElement>(loopValueFactory, _lst,s1);
+            var s = new JsonSchemaArrayBuilder<TModel, TElement>(loopValueFactory, ActionList, s1);
 
-            return s;
+            var obj=s.Start();
+
+            obj.Start();
+
+            return obj;
         }
 
         /// <summary>
@@ -511,7 +530,7 @@ namespace Kugar.Core.Web.ActionResult
         /// <returns></returns>
         public JsonSchemaObjectBuilder<TModel> AddCustomAction(PipeAction<TModel> action)
         {
-            _lst.Add(action);
+            ActionList.Add(action);
 
             return this;
         }
@@ -536,18 +555,24 @@ namespace Kugar.Core.Web.ActionResult
 
         public void End()
         {
-            _lst.Add(async (writer, model) =>
+            ActionList.Add(async (writer, model) =>
             {
                 await writer.WriteEndObjectAsync();
+
+                await writer.FlushAsync();
             });
 
             _parentSchemaBulder.Dispose();
+
+            OnEndCallback?.Invoke(this);
         }
 
         public void Dispose()
         {
             End();
         }
+
+        public event Action<JsonSchemaObjectBuilder<TModel>> OnEndCallback;
 
         //protected List<PipeAction<TModel>> getJsonActionsList(Type type)
         //{
@@ -573,19 +598,33 @@ namespace Kugar.Core.Web.ActionResult
         private List<PipeAction<TModel>> _lst = null;
 
         private List<PipeAction<TElement>> _loopObject = new List<PipeAction<TElement>>();
-        private Expression<Func<TModel, Task<IEnumerable<TElement>>>> _listValueFactory = null;
+        private Expression<Func<TModel, IEnumerable<TElement>>> _listValueFactory = null;
         private JsonObjectSchemeBuilder _schemaBuilder = null;
 
-        public JsonSchemaArrayBuilder(Expression<Func<TModel, Task<IEnumerable<TElement>>>> listValueFactory, List<PipeAction<TModel>> lst, JsonObjectSchemeBuilder schemaBuilder)
+        public JsonSchemaArrayBuilder(Expression<Func<TModel, IEnumerable<TElement>>> listValueFactory, List<PipeAction<TModel>> lst, JsonObjectSchemeBuilder schemaBuilder)
         {
             _lst = lst;
             _listValueFactory = listValueFactory;
             _schemaBuilder = schemaBuilder;
         }
 
+        /// <summary>
+        /// 由框架调用,请不要调用该函数
+        /// </summary>
+        /// <returns></returns>
+        [Browsable(false)]
         public JsonSchemaObjectBuilder<TElement> Start()
         {
-            return new JsonSchemaObjectBuilder<TElement>(_loopObject, _schemaBuilder);
+            var builder= new JsonSchemaObjectBuilder<TElement>(_loopObject, _schemaBuilder);
+
+            builder.OnEndCallback += onChildBuildEnd;
+
+            return builder;
+        }
+
+        private void onChildBuildEnd(JsonSchemaObjectBuilder<TElement> obj)
+        {
+            End();
         }
 
         public void End()
@@ -596,18 +635,27 @@ namespace Kugar.Core.Web.ActionResult
             {
                 await writer.WriteStartArrayAsync();
 
-                var array =await loopValueFactory(model);
+                var array =loopValueFactory(model);
 
                 foreach (var element in array)
                 {
-                    await writer.WriteStartObjectAsync();
+                    //await writer.WriteStartObjectAsync();
 
-                    foreach (var action in _loopObject)
+                    try
                     {
-                        await action(writer, element);
+                        foreach (var action in _loopObject)
+                        {
+                            await action(writer, element);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                        throw;
                     }
 
-                    await writer.WriteEndObjectAsync();
+                    //此处不要调用WriteEndObjectAsync,,因为在输出的object的end中,已经调用了
+                    //await writer.WriteEndObjectAsync();
                 }
 
                 await writer.WriteEndArrayAsync();
@@ -629,8 +677,9 @@ namespace Kugar.Core.Web.ActionResult
     {
         //private readonly List<PipeAction<TModel>> _actionList=null;
         //private static Dictionary<Type, JsonObjectSchemeBuilder> _cacheSchema = new Dictionary<Type, JsonObjectSchemeBuilder>();
+        private static Dictionary<Type, JsonObjectSchemeBuilder> _cacheSchemaBuilder=new Dictionary<Type, JsonObjectSchemeBuilder>();
 
-        protected StaticJsonBuilder() : base(new List<PipeAction<TModel>>(), null)
+        protected StaticJsonBuilder() : base(null, null)
         {
             //Build();
         }
@@ -641,15 +690,46 @@ namespace Kugar.Core.Web.ActionResult
 
             if (ActionList.Count > 0)
             {
+                
                 return ActionList;
             }
             else
             {
+                if (Generator==null)
+                {
+                    var opt =
+                        (IOptions<AspNetCoreOpenApiDocumentGeneratorSettings>) HttpContext.Current.RequestServices.GetService(
+                            typeof(IOptions<AspNetCoreOpenApiDocumentGeneratorSettings>));
+
+                    var g = HttpContext.Current.RequestServices.GetService(typeof(JsonSchemaGenerator));
+
+                    //var register = (OpenApiDocumentRegistration)HttpContext.Current.RequestServices.GetService(typeof(OpenApiDocumentRegistration));
+
+                    //var opt1 = HttpContext.Current.Features.Get<IOptions<AspNetCoreOpenApiDocumentGeneratorSettings>>();
+
+                    var document = new OpenApiDocument();
+                    //var settings = new AspNetCoreOpenApiDocumentGeneratorSettings();
+                    var schemaResolver = new OpenApiSchemaResolver(document, opt.Value);
+                    var generator = new JsonSchemaGenerator(opt.Value);
+
+                    Resolver = schemaResolver;
+                    Generator = generator;
+
+                    var scheme = new JsonSchema();
+
+                    var builder = new JsonObjectSchemeBuilder(scheme.Properties, s=>s);
+
+                    SchemaBuilder = builder;
+                }
+                //ActionList.Clear();
+
                 this.Start();
 
                 BuildSchema();
 
                 this.End();
+
+                _cacheSchemaBuilder.Add(this.GetType(),SchemaBuilder);
 
                 return this.ActionList;
             }
@@ -694,7 +774,9 @@ namespace Kugar.Core.Web.ActionResult
 
             context.HttpContext.Response.ContentType = "application/json";
 
-            using (var textWriter = new StreamWriter(context.HttpContext.Response.Body,Encoding.UTF8))
+            //using (var stream = new MemoryStream())
+            
+            using (var textWriter = new StreamWriter(/*stream*/context.HttpContext.Response.Body, Encoding.UTF8))
             using (var writer = new JsonTextWriter(textWriter))
             {
                 //writer.WriteStartObject();
@@ -717,11 +799,25 @@ namespace Kugar.Core.Web.ActionResult
         public void GetNSwag(JsonSchemaGenerator generator, JsonSchemaResolver resolver, JsonObjectSchemeBuilder builder)
         {
             //由于框架初始化的时候,就调用该函数了,所以,,build在这里就直接初始化完成了
-            this.SchemaBulder = builder;
-            this.Generator = generator;
-            this.Resolver = resolver;
+            
 
-            Build();
+            if (_cacheSchemaBuilder.TryGetValue(this.GetType(),out var tmp))
+            {
+                foreach (var property in tmp.Properties)
+                {
+                    builder.Properties.Add(property);
+                }   
+            }
+            else
+            {
+                this.SchemaBuilder = builder;
+                this.Generator = generator;
+                this.Resolver = resolver;
+
+                Build();
+            }
+
+            
         }
     }
 }

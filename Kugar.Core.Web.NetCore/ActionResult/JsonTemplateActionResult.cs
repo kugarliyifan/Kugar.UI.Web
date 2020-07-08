@@ -897,7 +897,7 @@ namespace Kugar.Core.Web.ActionResult
         /// <param name="newProperty">覆盖原属性名称</param>
         /// <param name="type">覆盖原属性数据类型</param>
         /// <returns></returns>
-        public JsonObjectSchemeBuilderWithType<T> Property<TValue>(Expression<Func<T, TValue>> property, string newPropertyName = null, JsonObjectType? type = null,object example=null,bool nullable = false)
+        public JsonObjectSchemeBuilderWithType<T> Property<TValue>(Expression<Func<T, TValue>> property, string newPropertyName = null, JsonObjectType? type = null,object example=null,bool nullable = false,string desciption = "")
         {
             var body = getMemberExpr(property);
 
@@ -906,7 +906,7 @@ namespace Kugar.Core.Web.ActionResult
                 throw new ArgumentOutOfRangeException(nameof(property),"property表达式返回的必须是property或者field");
             }
 
-            return Property(body, newPropertyName, type, example, nullable);
+            return Property(body, newPropertyName, type, example, nullable, desciption);
         }
 
         /// <summary>
@@ -953,13 +953,16 @@ namespace Kugar.Core.Web.ActionResult
         }
 
         protected JsonObjectSchemeBuilderWithType<T> Property(MemberExpression property,
-            string newProperty = null, JsonObjectType? type = null, object example = null, bool nullable = false)
+            string newProperty = null, JsonObjectType? type = null, object example = null, bool nullable = false, string desciption = "")
         {
             var name = string.IsNullOrWhiteSpace(newProperty) ? property.Member.Name : newProperty;
 
             JsonObjectType realtype;
 
-            string desc = _typeXmlDesc.TryGetValue(property.Member.Name, "");
+            if (string.IsNullOrWhiteSpace(desciption))
+            {
+                desciption = _typeXmlDesc.TryGetValue(property.Member.Name, "");
+            }
 
             if (type == null)
             {
@@ -983,7 +986,7 @@ namespace Kugar.Core.Web.ActionResult
                 realtype = type.Value;
             }
 
-            _parent.AddProperty(name, realtype, desc, example: example, nullable: nullable);
+            _parent.AddProperty(name, realtype, desciption, example: example, nullable: nullable);
 
             return this;
         }
@@ -1108,7 +1111,7 @@ namespace Kugar.Core.Web.ActionResult
         {
             var types = typeAssemblies.SelectMany(x=>x.GetTypes())
                 .Where(x => x.IsImplementlInterface(typeof(IJsonTemplateActionResult)) && !x.IsAbstract &&
-                            x.IsPublic && x.GetMethod("GetNSwag")?.IsInstance() == true)
+                            x.IsPublic)
                 .ToArrayEx();
 
             

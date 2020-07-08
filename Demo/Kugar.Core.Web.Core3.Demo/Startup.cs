@@ -55,7 +55,7 @@ namespace Kugar.Core.Web.Core3.Demo
 
             services.EnableSyncIO();
 
-            services.EnableSyncIO().AddSwaggerDocument(opt =>
+            services/*.EnableSyncIO()*/.AddSwaggerDocument(opt =>
             {
                 //opt.DocumentName = "api";
                // opt.ApiGroupNames = new[] { "wxapi" };
@@ -193,8 +193,8 @@ namespace Kugar.Core.Web.Core3.Demo
             {
                 // 這裡的 Path 用來設定 ReDoc UI 的路由 (網址路徑) (一定要以 / 斜線開頭)
                 config.Path = "/swager";
-
             });
+
 
             app.UseEndpoints(endpoints =>
             {

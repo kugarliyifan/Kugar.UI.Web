@@ -96,6 +96,28 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
             return v;
         }
 
+        [ProducesResponseType(typeof(TestJsonTemplate3),200)]
+        public async Task<IActionResult> Test4()
+        {
+            var v = new TestJsonTemplate3()
+            {
+                Model = new Test<string, string>("iiii", "oooo")
+            };
+
+            return v;
+        }
+
+        [ProducesResponseType(typeof(TestCustomJsonTemplate4), 200)]
+        public async Task<IActionResult> Test5()
+        {
+            var v=new TestCustomJsonTemplate4()
+            {
+                Model = new Test<string, string>("iiii", "oooo")
+            };
+
+            return v;
+        }
+
         public ResultReturn<(string str1, int int3)> Test()
         {
             return new SuccessResultReturn<(string str1, int int3)>(("2222",222));
@@ -119,12 +141,60 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
             Prop2 = p2;
         }
 
+        /// <summary>
+        /// prop2原备注
+        /// </summary>
         public T2 Prop2 { set; get; }
 
+        /// <summary>
+        /// prop1原备注
+        /// </summary>
         public T1 Prop1 { set; get; }
 
+        /// <summary>
+        /// prop3备注
+        /// </summary>
         public (string sss2, string ppp) Prop3 { set; get; } = ("33333", "4444");
+
+        /// <summary>
+        /// 数组测试备注
+        /// </summary>
+        public T2[] ArrayTest => Enumerable.Repeat(Prop2, 20).ToArrayEx();
+
+        /// <summary>
+        /// 数组2测试备注
+        /// </summary>
+        public AP[] ArrayTest2 { get; }=new AP[]
+        {
+            new AP(){str2 = "11",str3 = "222",int2 = 10},
+            new AP(){str2 = "12",str3 = "223",int2 = 11},
+            new AP(){str2 = "13",str3 = "224",int2 = 12},
+            new AP(){str2 = "14",str3 = "225",int2 = 13},
+
+        };
     }
+
+    public class AP
+    {
+        /// <summary>
+        /// str2原备注
+        /// </summary>
+        public string str2 { set; get; }
+
+        /// <summary>
+        /// str3原备注
+        /// </summary>
+        public string str3
+        {
+            set;
+            get;
+        }
+
+        /// <summary>
+        /// int2原备注
+        /// </summary>
+        public int int2 { set; get; }
+}
 
     public class TestJsonTemplate1 : StaticJsonBuilder<Test<string,int>>
     {
@@ -150,6 +220,64 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
 
             this.AddProperty("prop3", x => x.Prop1, "测试属性2");
         }
+    }
+
+    public class TestJsonTemplate3: StaticJsonBuilder<Test<string, string>>
+    {
+        protected override void BuildSchema()
+        {
+            this.AddProperty("prop2", x => x.Prop2, "prop2测试")
+                .AddProperty(x => x.Prop1);
+
+            this.AddObject("prop3","测试子object")
+                .AddPropertyFrom(x=>x.Prop3,x=>x.ppp,x=>x.sss2)
+                .End();
+
+            this.AddArrayObject("arraytest",x=>x.ArrayTest2,"")
+                .AddProperty(x=>x.str3,"str3备注")
+                .AddProperty(x=>x.str2)
+                .AddProperty(x=>x.int2)
+                .End();
+                
+        }
+    }
+
+    public class TestCustomJsonTemplate4 : JsonTemplateActionResult<Test<string, string>>
+    {
+        public override void BuildJson(JsonTemplateBuilder writer)
+        {
+            using (var o=writer.StartObject())
+            {
+                o.WriteProperty("prop2", Model.Prop2)
+                    .With(Model)
+                    .WriteProperty(x => x.Prop1)
+                    .End();
+
+                using (o.StartObject("prop3"))
+                {
+                    o.WriteProperty("prop3", Model.Prop3.ppp)
+                        .WriteProperty("sss2", Model.Prop3.sss2);
+                }
+
+                using (var ar=o.StartArray("arraytest"))
+                {
+                    foreach (var item in Model.ArrayTest2)
+                    {
+                        using (var o2=ar.StartObject())
+                        {
+                            o2.With(item)
+                                .WriteProperty(x => x.str3)
+                                .WriteProperty(x => x.str2)
+                                .WriteProperty(x => x.int2)
+                                .End();
+                        }
+                    }
+                }
+                    
+            }
+        }
+
+
     }
 
     //public class A : DefaultContractResolver
