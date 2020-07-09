@@ -18,6 +18,8 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
+using NJsonSchema;
+using NJsonSchema.Generation;
 using PropertyInfo = System.Reflection.PropertyInfo;
 using ValueTuple = System.ValueTuple;
 
@@ -244,6 +246,31 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
 
     public class TestCustomJsonTemplate4 : JsonTemplateActionResult<Test<string, string>>
     {
+        public override void GetNSwag(JsonSchemaGenerator generator, JsonSchemaResolver resolver, JsonObjectSchemeBuilder builder)
+        {
+            builder.AddProperty("prop2", JsonObjectType.String, "prop2原备注")
+                .With<Test<string, string>>()
+                .Property(x=>x.Prop1)
+                .End()
+                ;
+
+            using (var a1= builder.AddObjectProperty("prop3", "prop3原备注"))
+            {
+                a1.AddProperty("prop3", JsonObjectType.String, "")
+                    .AddProperty("sss2", JsonObjectType.String, "");
+            }
+
+            using (var a2=builder.AddArrayProperty("arraytest", "arraytest"))
+            {
+                a2.With<AP>()
+                    .Property(x => x.str3)
+                    .Property(x => x.str2)
+                    .Property(x => x.int2)
+                    .End();
+            }
+
+        }
+
         public override void BuildJson(JsonTemplateBuilder writer)
         {
             using (var o=writer.StartObject())

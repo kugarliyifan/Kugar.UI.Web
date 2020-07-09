@@ -8,6 +8,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Kugar.Core.BaseStruct;
 using Kugar.Core.ExtMethod;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -445,7 +446,7 @@ namespace Kugar.Core.Web.ActionResult
         /// <param name="propertyName"></param>
         /// <param name="desciption"></param>
         /// <returns></returns>
-        public JsonSchemaObjectBuilder<TModel> AddObject(string propertyName,string desciption="")
+        public JsonSchemaObjectBuilder<TValue> AddObjectFrom<TValue>(string propertyName,Expression<Func<TModel,TValue>> valueFactory, string desciption="")
         {
             if (!string.IsNullOrWhiteSpace(propertyName))
             {
@@ -460,6 +461,42 @@ namespace Kugar.Core.Web.ActionResult
             }
 
             var c=_parentSchemaBulder.AddObjectProperty(propertyName, desciption);
+
+            var actionList=new List<PipeAction<TValue>>();
+
+            var s = new JsonSchemaObjectBuilder<TValue>(actionList, c);
+
+            s.Start();
+
+            s.OnEndCallback+= bulder
+            {
+
+            }
+
+            return s;
+        }
+
+        /// <summary>
+        /// 添加一个对象属性,,可用using结尾,或End()结尾
+        /// </summary>
+        /// <param name="propertyName"></param>
+        /// <param name="desciption"></param>
+        /// <returns></returns>
+        public JsonSchemaObjectBuilder<TModel> AddObject(string propertyName, string desciption = "")
+        {
+            if (!string.IsNullOrWhiteSpace(propertyName))
+            {
+                ActionList.Add(async (writer, _) =>
+                {
+                    await writer.WritePropertyNameAsync(propertyName);
+                });
+            }
+            else
+            {
+                throw new ArgumentNullException(nameof(propertyName));
+            }
+
+            var c = _parentSchemaBulder.AddObjectProperty(propertyName, desciption);
 
             var s = new JsonSchemaObjectBuilder<TModel>(ActionList, c);
 
@@ -818,6 +855,25 @@ namespace Kugar.Core.Web.ActionResult
             }
 
             
+        }
+    }
+
+    public static class StaticJsonBuilderExt
+    {
+        public static JsonSchemaObjectBuilder<TResult> AddResultReturn<TModel,TResult>(this JsonSchemaObjectBuilder<TModel> builder,
+            Expression<Func<TModel, IResultReturn>> valueFactory) where TResult:ResultReturn
+        {
+            
+        }
+
+        public static JsonSchemaObjectBuilder<object> UseResultReturn<TModel>(this JsonSchemaObjectBuilder<TModel> builder,
+            Expression<Func<TModel, IResultReturn>> valueFactory) where TModel:ResultReturn
+        {
+            return builder.AddProperty(x => x.IsSuccess, x => x.Message, x => x.ReturnCode, x => x.Error)
+                .AddObject("returnData", "返回数据")
+                .Start();
+
+
         }
     }
 }
