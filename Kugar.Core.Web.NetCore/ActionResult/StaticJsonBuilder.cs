@@ -468,10 +468,10 @@ namespace Kugar.Core.Web.ActionResult
 
             s.Start();
 
-            s.OnEndCallback+= bulder
-            {
+            //s.OnEndCallback+= bulder
+            //{
 
-            }
+            //}
 
             return s;
         }
@@ -710,13 +710,17 @@ namespace Kugar.Core.Web.ActionResult
 
     public delegate Task<TValue> JsonValueFactory<in TModel, TValue>(TModel model);
 
-    public abstract class StaticJsonBuilder<TModel> : JsonSchemaObjectBuilder<TModel>, IJsonTemplateActionResult
+    /// <summary>
+    /// 静态预编译的JsonTemplateActionResult,以提升输出性能
+    /// </summary>
+    /// <typeparam name="TModel"></typeparam>
+    public abstract class StaticJsonTemplateActionResult<TModel> : JsonSchemaObjectBuilder<TModel>, IJsonTemplateActionResult
     {
         //private readonly List<PipeAction<TModel>> _actionList=null;
         //private static Dictionary<Type, JsonObjectSchemeBuilder> _cacheSchema = new Dictionary<Type, JsonObjectSchemeBuilder>();
         private static Dictionary<Type, JsonObjectSchemeBuilder> _cacheSchemaBuilder=new Dictionary<Type, JsonObjectSchemeBuilder>();
 
-        protected StaticJsonBuilder() : base(null, null)
+        protected StaticJsonTemplateActionResult() : base(null, null)
         {
             //Build();
         }
@@ -860,20 +864,20 @@ namespace Kugar.Core.Web.ActionResult
 
     public static class StaticJsonBuilderExt
     {
-        public static JsonSchemaObjectBuilder<TResult> AddResultReturn<TModel,TResult>(this JsonSchemaObjectBuilder<TModel> builder,
-            Expression<Func<TModel, IResultReturn>> valueFactory) where TResult:ResultReturn
-        {
+        //public static JsonSchemaObjectBuilder<TResult> AddResultReturn<TModel,TResult>(this JsonSchemaObjectBuilder<TModel> builder,
+        //    Expression<Func<TModel, IResultReturn>> valueFactory) where TResult:ResultReturn
+        //{
             
-        }
+        //}
 
-        public static JsonSchemaObjectBuilder<object> UseResultReturn<TModel>(this JsonSchemaObjectBuilder<TModel> builder,
-            Expression<Func<TModel, IResultReturn>> valueFactory) where TModel:ResultReturn
-        {
-            return builder.AddProperty(x => x.IsSuccess, x => x.Message, x => x.ReturnCode, x => x.Error)
-                .AddObject("returnData", "返回数据")
-                .Start();
+        //public static JsonSchemaObjectBuilder<object> UseResultReturn<TModel>(this JsonSchemaObjectBuilder<TModel> builder,
+        //    Expression<Func<TModel, IResultReturn>> valueFactory) where TModel:ResultReturn
+        //{
+        //    return builder.AddProperty(x => x.IsSuccess, x => x.Message, x => x.ReturnCode, x => x.Error)
+        //        .AddObject("returnData", "返回数据")
+        //        .Start();
 
 
-        }
+        //}
     }
 }

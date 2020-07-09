@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Resources;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading;
@@ -11,6 +12,7 @@ using Kugar.Core.ExtMethod;
 using Kugar.Core.Web.ActionResult;
 using Kugar.Core.Web.Core3.Demo.Controllers;
 using Kugar.Core.Web.Formatters;
+using Kugar.Core.Web.Resources;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -19,12 +21,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Localization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using NJsonSchema;
 using NSwag;
 using NSwag.Generation.Processors;
 using NSwag.Generation.Processors.Security;
+using DataAnnotationsResources = Kugar.Core.Web.Resources.DataAnnotationsResources;
 
 namespace Kugar.Core.Web.Core3.Demo
 {
@@ -117,22 +121,34 @@ namespace Kugar.Core.Web.Core3.Demo
                 //}));
             });
 
+            var t = new ResourceManager(typeof(DataAnnotationsResources));
+
+            //var t1=t.GetString("ArgumentIsNullOrWhitespace");
+
+            //var field=AppDomain.CurrentDomain.GetAssemblies().Where(x => x.GetName().Name == "System.ComponentModel.Annotations")
+            //    .First()
+            //    .GetType("SR")
+            //    .GetField("s_resourceManager");
+                
+            
 
             services.AddControllersWithViews(opt =>
-            {
+                {
+                    opt.ModelBindingMessageProvider.SetValueIsInvalidAccessor(s =>
+                    {
+                        return s;
+                    });
                 opt.OutputFormatters.Insert(0,new ValueTupleOutputFormatter(x =>
                 {
                     x.NamingStrategy= new CamelCaseNamingStrategy(true,true);
                 }));
             }).AddNewtonsoftJson().EnableJsonValueModelBinder()
-                .AddDataAnnotationsLocalization(opt =>
-                {
+                .AddDataAnnotationsLocalization(opt => {
                     opt.DataAnnotationLocalizerProvider = (type, factory) =>
                     {
-                        var loc= factory.Create(type).WithCulture(Thread.CurrentThread.CurrentUICulture);
-
+                        var loc = factory.Create(typeof(DataAnnotationsResources)).WithCulture(Thread.CurrentThread.CurrentUICulture);
+                        var s1 = loc["StringLengthAttribute_ValidationError"];
                         return loc;
-                        return null;
                     };
                 });
             ;
@@ -172,7 +188,7 @@ namespace Kugar.Core.Web.Core3.Demo
 
             app.Use(async (context, next) =>
             {
-                Thread.CurrentThread.CurrentUICulture=new CultureInfo("zh-CN");;
+                Thread.CurrentThread.CurrentUICulture=new CultureInfo("en");;
 
                 await next();
             });
@@ -184,6 +200,14 @@ namespace Kugar.Core.Web.Core3.Demo
             app.UseAuthorization();
 
             app.UseStaticHttpContext();
+
+            var supportedCultures = new[] { new CultureInfo("en"), new CultureInfo("zh-cn") };
+            app.UseRequestLocalization(new RequestLocalizationOptions()
+            {
+                DefaultRequestCulture = new RequestCulture(new CultureInfo("zh-cn")),
+                SupportedCultures = supportedCultures,
+                SupportedUICultures = supportedCultures
+            });
 
             app.UseOpenApi();       // serve OpenAPI/Swagger documents
 

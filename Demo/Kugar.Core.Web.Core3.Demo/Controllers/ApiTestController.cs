@@ -36,7 +36,8 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
         /// <returns></returns>
         [FromBodyJson,HttpPost]
         public async Task<IActionResult> TestValid(
-            [Display(Name = "ssssss")][StringLength(100,MinimumLength = 6),Required] string str1,
+             [Display(Name = "ssssss"),StringLength(100,MinimumLength = 6),Required] string str1,
+             [Range(20,50), Required] int int3,
              (string key1,string key2) tupleTest
         )
         {
@@ -198,7 +199,7 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
         public int int2 { set; get; }
 }
 
-    public class TestJsonTemplate1 : StaticJsonBuilder<Test<string,int>>
+    public class TestJsonTemplate1 : StaticJsonTemplateActionResult<Test<string,int>>
     {
         protected override void BuildSchema()
         {
@@ -214,7 +215,7 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
         }
     }
 
-    public class TestJsonTemplate2 : StaticJsonBuilder<Test<string, string>>
+    public class TestJsonTemplate2 : StaticJsonTemplateActionResult<Test<string, string>>
     {
         protected override void BuildSchema()
         {
@@ -224,7 +225,7 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
         }
     }
 
-    public class TestJsonTemplate3: StaticJsonBuilder<Test<string, string>>
+    public class TestJsonTemplate3: StaticJsonTemplateActionResult<Test<string, string>>
     {
         protected override void BuildSchema()
         {

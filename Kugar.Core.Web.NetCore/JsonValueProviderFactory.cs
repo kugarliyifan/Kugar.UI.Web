@@ -6,12 +6,16 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Fasterflect;
 using Kugar.Core.ExtMethod;
+using Kugar.Core.Web.Resources;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -21,6 +25,7 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Localization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -28,19 +33,19 @@ namespace Kugar.Core.Web
 {
     public class JsonValueProviderFactory : IValueProviderFactory
     {
-        private static JsonValueProvider _provider=new JsonValueProvider();
+        private static JsonValueProvider _provider = new JsonValueProvider();
         private static ConcurrentDictionary<MethodInfo, FromBodyJsonAttribute> _cacheMethodIsJson = null;
 
         static JsonValueProviderFactory()
         {
-            _cacheMethodIsJson=new ConcurrentDictionary<MethodInfo, FromBodyJsonAttribute>();
+            _cacheMethodIsJson = new ConcurrentDictionary<MethodInfo, FromBodyJsonAttribute>();
         }
 
-        public async  Task CreateValueProviderAsync(ValueProviderFactoryContext context)
+        public async Task CreateValueProviderAsync(ValueProviderFactoryContext context)
         {
             var d = (ControllerActionDescriptor)context.ActionContext.ActionDescriptor;
 
-            if (context.ActionContext.HttpContext.Request.Method.CompareTo("get",true))
+            if (context.ActionContext.HttpContext.Request.Method.CompareTo("get", true))
             {
                 return;
             }
@@ -52,7 +57,7 @@ namespace Kugar.Core.Web
 
             var contentType = context.ActionContext.HttpContext.Request.ContentType;
 
-            if (string.IsNullOrWhiteSpace(contentType) || (!contentType.StartsWith("application/json",StringComparison.CurrentCultureIgnoreCase) && !contentType.StartsWith("text/json",StringComparison.CurrentCultureIgnoreCase)))
+            if (string.IsNullOrWhiteSpace(contentType) || (!contentType.StartsWith("application/json", StringComparison.CurrentCultureIgnoreCase) && !contentType.StartsWith("text/json", StringComparison.CurrentCultureIgnoreCase)))
             {
                 return;
             }
@@ -60,17 +65,17 @@ namespace Kugar.Core.Web
             //var s = d.MethodInfo.GetCustomAttributes(typeof(FromBodyJsonAttribute), true);
 
             var attr = _cacheMethodIsJson.GetOrAdd(d.MethodInfo,
-                x => (FromBodyJsonAttribute) d.MethodInfo.GetCustomAttributes(typeof(FromBodyJsonAttribute), true)
+                x => (FromBodyJsonAttribute)d.MethodInfo.GetCustomAttributes(typeof(FromBodyJsonAttribute), true)
                     .FirstOrDefault());
 
-            if (attr!=null)
+            if (attr != null)
             {
                 context.ActionContext.HttpContext.Request.EnableBuffering();
 
-                var inputStream= context.ActionContext.HttpContext.Request.Body;
+                var inputStream = context.ActionContext.HttpContext.Request.Body;
                 inputStream.Position = 0;
 
-                var dataBytes=await inputStream.ReadAllBytesAsync();
+                var dataBytes = await inputStream.ReadAllBytesAsync();
 
                 var jsonStr = Encoding.UTF8.GetString(dataBytes);
 
@@ -84,12 +89,12 @@ namespace Kugar.Core.Web
                 {
                     throw new Exception("request中的数据无法转换为json数据");
                 }
-                
-                
+
+
                 context.ActionContext.HttpContext.Items["__jsonData"] = json;
                 inputStream.Position = 0;
 
-                
+
                 context.ValueProviders.Insert(0, _provider);
             }
 
@@ -113,7 +118,7 @@ namespace Kugar.Core.Web
             public IModelBinder GetBinder(ModelBinderProviderContext context)
             {
                 var accessor = (IActionContextAccessor)context.Services.GetService(typeof(IActionContextAccessor));
-                
+
                 var ac = (accessor.ActionContext.ActionDescriptor as ControllerActionDescriptor);
 
                 if (ac != null)
@@ -121,10 +126,10 @@ namespace Kugar.Core.Web
 
                     var metaData = context.Metadata as DefaultModelMetadata;
 
-                    if (metaData!=null)
+                    if (metaData != null)
                     {
                         //如果已经定义了别的绑定特性,则忽略,如FromQuery等
-                        if (metaData.Attributes.ParameterAttributes!=null && metaData.Attributes.ParameterAttributes.Any(x=>x is IBindingSourceMetadata))
+                        if (metaData.Attributes.ParameterAttributes != null && metaData.Attributes.ParameterAttributes.Any(x => x is IBindingSourceMetadata))
                         {
                             return null;
                         }
@@ -134,12 +139,12 @@ namespace Kugar.Core.Web
                 var attr = (FromBodyJsonAttribute)(accessor.ActionContext.ActionDescriptor as ControllerActionDescriptor).MethodInfo
                     .GetCustomAttributes(typeof(FromBodyJsonAttribute)).FirstOrDefault();
 
-                if (attr!=null)
+                if (attr != null)
                 {
                     if (attr != null)
                     {
                         var metaData = context.Metadata as DefaultModelMetadata;
-                        
+
                         if (metaData?.Attributes?.ParameterAttributes?.Any(x => x is TupleElementNamesAttribute) == true)
                         {
                             var valueTupleAttr = (TupleElementNamesAttribute)metaData.Attributes.ParameterAttributes.FirstOrDefault(x =>
@@ -148,7 +153,7 @@ namespace Kugar.Core.Web
                             if (metaData.ModelType.IsIEnumerable())
                             {
                                 return new JsonArrayValueTupleBinder(valueTupleAttr, metaData.ModelType,
-                                    attr.IsCaseSensitive??_isCaseSensitive);
+                                    attr.IsCaseSensitive ?? _isCaseSensitive);
                             }
 
                             return new JsonValueTupleBinder(valueTupleAttr, metaData.ModelType, attr.IsCaseSensitive ?? _isCaseSensitive);
@@ -250,50 +255,53 @@ namespace Kugar.Core.Web
 
         protected bool Validate(object value, ModelBindingContext bindingContext)
         {
-            Debugger.Break();
-            
-
             if (bindingContext.ModelMetadata.ValidatorMetadata.Count > 0)
             {
-                var validResults = new List<ValidationResult>(bindingContext.ModelMetadata.ValidatorMetadata.Count);
-                
+                //var validResults = new List<ValidationResult>(bindingContext.ModelMetadata.ValidatorMetadata.Count);
+
                 var json = bindingContext.HttpContext.Items["__jsonData"];
-
-                var lst = bindingContext.ModelMetadata.ValidatorMetadata.Select(x => ((ValidationAttribute) x));
-
                 var s3 = bindingContext.ModelMetadata as DefaultModelMetadata;
+                var desc = s3.Attributes.Attributes.FirstOrDefault(x => x is DisplayAttribute) as DisplayAttribute;
 
-                var desc = s3.Attributes.Attributes.FirstOrDefault(x => x is DescriptionAttribute) as DescriptionAttribute;
+                ValidationContext validationContext = new ValidationContext(json, null, null)
+                {
+                    DisplayName = desc?.Name ?? bindingContext.FieldName,
+                    MemberName = bindingContext.FieldName
+                };
+
+                var lst = bindingContext.ModelMetadata.ValidatorMetadata.Select(x => ((ValidationAttribute)x)).ToArrayEx();
 
                 var isValid = true;
 
-                foreach (var validator in lst)
+                if (lst.HasData())
                 {
-                    if (!validator.IsValid(value))
+                    var f = (IStringLocalizerFactory)bindingContext.HttpContext.RequestServices.GetService(typeof(IStringLocalizerFactory));
+
+                    var loc = f.Create(typeof(DataAnnotationsResources)).WithCulture(culture: Thread.CurrentThread.CurrentUICulture);
+
+                    foreach (var validator in lst)
                     {
-                        isValid = false;
-                        bindingContext.ModelState.AddModelError(bindingContext.FieldName, new ValidationException(new ValidationResult(string.Format(validator.ErrorMessage, desc?.Description ?? bindingContext.FieldName)), null, value), bindingContext.ModelMetadata);
+                        var propertyKey = (string) validator.GetPropertyValue("ErrorMessageString");
+
+                        if (propertyKey!=null)
+                        {
+                            validator.ErrorMessage = loc[propertyKey];
+                        }
+
+                        var validationResult = validator.GetValidationResult(value, validationContext);
+
+                        if (validationResult != ValidationResult.Success)
+                        {
+                            isValid = false;
+
+                            bindingContext.ModelState.AddModelError(bindingContext.FieldName, new ValidationException(validationResult, validator, value), bindingContext.ModelMetadata);
+                        }
                     }
                 }
 
-                return isValid;
                 
-               
-                //if (!Validator.TryValidateValue(value, new ValidationContext(json){MemberName = bindingContext.FieldName, DisplayName = desc?.Description?? bindingContext.FieldName }, validResults, lst))
-                //{
-                //    Debugger.Break();
 
-                //    foreach (var result in validResults)
-                //    {
-                //        bindingContext.ModelState.AddModelError(bindingContext.FieldName, new ValidationException(result, null, value), bindingContext.ModelMetadata);
-                //    }
-
-                //    return false;
-                //}
-                //else
-                //{
-                //    return true;
-                //}
+                return isValid;
             }
 
             return true;
@@ -305,9 +313,9 @@ namespace Kugar.Core.Web
             {
                 var json = (JObject)item;
 
-                if (json!=null && json.TryGetValue(bindingContext.FieldName,_isCaseSensitive?StringComparison.CurrentCulture: StringComparison.InvariantCultureIgnoreCase,out value))
+                if (json != null && json.TryGetValue(bindingContext.FieldName, _isCaseSensitive ? StringComparison.CurrentCulture : StringComparison.InvariantCultureIgnoreCase, out value))
                 {
-                    
+
                 }
                 else
                 {
@@ -342,18 +350,18 @@ namespace Kugar.Core.Web
 
     internal class JsonModelBinder : JsonValueModelBinderBase
     {
-        
 
-        public JsonModelBinder(bool isCaseSensitive):base(isCaseSensitive)
+
+        public JsonModelBinder(bool isCaseSensitive) : base(isCaseSensitive)
         {
-            
+
         }
 
-        
+
 
         public override async Task BindModelAsync(ModelBindingContext bindingContext)
         {
-            if (TryGetJsonValue(bindingContext, bindingContext.FieldName,out var jvalue) && jvalue!=null)
+            if (TryGetJsonValue(bindingContext, bindingContext.FieldName, out var jvalue) && jvalue != null)
             {
                 var value = jvalue?.ToObject(bindingContext.ModelType);
 
@@ -379,7 +387,7 @@ namespace Kugar.Core.Web
         private bool _isCaseSensitive = true;
         private Type[] _valueTypes = null;
 
-        public JsonValueTupleBinder( TupleElementNamesAttribute attr,Type modelType, bool isCaseSensitive = false):base(isCaseSensitive)
+        public JsonValueTupleBinder(TupleElementNamesAttribute attr, Type modelType, bool isCaseSensitive = false) : base(isCaseSensitive)
         {
             _attr = attr;
             _modelType = modelType;
@@ -387,7 +395,7 @@ namespace Kugar.Core.Web
             _valueTypes = modelType.GetGenericArguments();
         }
 
-        protected object decodeJsonToValueTuple(JObject value,Type elementType)
+        protected object decodeJsonToValueTuple(JObject value, Type elementType)
         {
             var names = _attr.TransformNames;
 
@@ -403,7 +411,7 @@ namespace Kugar.Core.Web
                     continue;
                 }
 
-                values[i]=value.GetValue(name)?.ToObject(type);
+                values[i] = value.GetValue(name)?.ToObject(type);
             }
 
             //Type genericType = Type.GetType("System.ValueTuple`" + values.Length);
@@ -417,16 +425,16 @@ namespace Kugar.Core.Web
 
         public override async Task BindModelAsync(ModelBindingContext bindingContext)
         {
-            if (TryGetJsonValue(bindingContext, bindingContext.FieldName,out var jvalue) && jvalue != null)
+            if (TryGetJsonValue(bindingContext, bindingContext.FieldName, out var jvalue) && jvalue != null)
             {
-                var value = decodeJsonToValueTuple((JObject) jvalue,_modelType);
+                var value = decodeJsonToValueTuple((JObject)jvalue, _modelType);
 
                 if (!Validate(value, bindingContext))
                 {
                     bindingContext.ModelState.SetModelValue(bindingContext.FieldName, value, value.ToStringEx());
                 }
 
-                
+
                 bindingContext.Result = ModelBindingResult.Success(value);
             }
             else
@@ -466,7 +474,7 @@ namespace Kugar.Core.Web
                 _isArray = true;
                 _elementType = modelType.GetElementType();
             }
-            else 
+            else
             {
                 if (modelType.IsImplementlInterface(typeof(IList<>)) || modelType.IsImplementlInterface(typeof(IEnumerable<>)))
                 {
@@ -476,7 +484,7 @@ namespace Kugar.Core.Web
                     _isList = true;
                 }
             }
-            
+
 
         }
 
@@ -488,13 +496,13 @@ namespace Kugar.Core.Web
             {
                 if (jvalue == null)
                 {
-                    bindingContext.ModelState.SetModelValue(bindingContext.ModelName,null, jvalue.ToStringEx());
+                    bindingContext.ModelState.SetModelValue(bindingContext.ModelName, null, jvalue.ToStringEx());
 
                     bindingContext.Result = ModelBindingResult.Success(null);
                 }
                 else if (jvalue is JArray jarray)
                 {
-                    IList array = Array.CreateInstance(_elementType,jvalue.Count());
+                    IList array = Array.CreateInstance(_elementType, jvalue.Count());
 
                     for (int i = 0; i < jarray.Count; i++)
                     {
@@ -524,7 +532,7 @@ namespace Kugar.Core.Web
                         }
                     }
 
-               
+
                     if (_isArray)
                     {
                         bindingContext.Result = ModelBindingResult.Success(array);
@@ -535,20 +543,20 @@ namespace Kugar.Core.Web
                         bindingContext.Result = ModelBindingResult.Success(result);
                     }
 
-                    
+
                 }
                 else
                 {
                     bindingContext.Result = ModelBindingResult.Failed();
                 }
-                
+
             }
             else
             {
                 bindingContext.Result = ModelBindingResult.Failed();
             }
 
-            
+
         }
     }
 
@@ -571,7 +579,7 @@ namespace Kugar.Core.Web
         /// <param name="builder"></param>
         /// <param name="isCaseSensitive">填充参数的时候,是否区分参数名的大小写,为true的时候,为区分大小写,默认为false</param>
         /// <returns></returns>
-        public static IMvcBuilder EnableJsonValueModelBinder(this IMvcBuilder builder,bool isCaseSensitive=false)
+        public static IMvcBuilder EnableJsonValueModelBinder(this IMvcBuilder builder, bool isCaseSensitive = false)
         {
             builder.Services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             builder.Services.TryAddSingleton<IActionContextAccessor, ActionContextAccessor>();
@@ -582,7 +590,7 @@ namespace Kugar.Core.Web
 
             builder.AddMvcOptions(opt =>
             {
-                opt.ModelBinderProviders.Insert(0,new JsonValueProviderFactory.JsonModelBinderProvider(isCaseSensitive));
+                opt.ModelBinderProviders.Insert(0, new JsonValueProviderFactory.JsonModelBinderProvider(isCaseSensitive));
                 opt.ValueProviderFactories.Insert(0, new JsonValueProviderFactory());
 
                 //var jsonFormater = (JsonOutputFormatter)opt.OutputFormatters.FirstOrDefault(x => x is JsonOutputFormatter);

@@ -18,6 +18,12 @@ namespace Kugar.Core.Web.Helpers
 
         public ModelStateDictionary ModelState { get; }
 
+        public override string Message => "数据校验错误,请查看errors属性";
+
+        public override string ToString()
+        {
+            return "数据校验错误,请查看error.errors属性";
+        }
     }
 
     public class ModelStateErrorExceptionJsonConverter : JsonConverter<ModelStateErrorException>
