@@ -277,7 +277,7 @@ namespace Kugar.Core.Web
                 {
                     var f = (IStringLocalizerFactory)bindingContext.HttpContext.RequestServices.GetService(typeof(IStringLocalizerFactory));
 
-                    var loc = f.Create(typeof(DataAnnotationsResources)).WithCulture(culture: Thread.CurrentThread.CurrentUICulture);
+                    IStringLocalizer loc=null;
 
                     foreach (var validator in lst)
                     {
@@ -285,7 +285,18 @@ namespace Kugar.Core.Web
 
                         if (propertyKey!=null)
                         {
-                            validator.ErrorMessage = loc[propertyKey];
+                            if (loc==null)
+                            {
+                                loc = f.Create(typeof(DataAnnotationsResources))
+                                    .WithCulture(culture: Thread.CurrentThread.CurrentUICulture);
+                            }
+
+                            var v = loc[propertyKey];
+
+                            if (!string.IsNullOrEmpty(v))
+                            {
+                                validator.ErrorMessage = v;
+                            }
                         }
 
                         var validationResult = validator.GetValidationResult(value, validationContext);
