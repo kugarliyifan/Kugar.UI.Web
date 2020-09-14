@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
@@ -219,19 +220,19 @@ namespace Kugar.Core.Web.ActionResult
         /// <param name="example"></param>
         /// <param name="nullable"></param>
         /// <returns></returns>
-        public JsonSchemaObjectBuilder<TModel> AddProperty<TValue>(string propertyName,Expression<Func<TModel,TValue>> valueFactory, string desciption="",/* JsonObjectType type,*/  object example = null,
+        public JsonSchemaObjectBuilder<TModel> AddProperty<TValue>(string propertyName,Func<TModel,TValue> valueFactory, string desciption="",/* JsonObjectType type,*/  object example = null,
             bool? nullable = null)
         {
             Debug.Assert(!string.IsNullOrWhiteSpace(propertyName));
             Debug.Assert(valueFactory!=null);
 
-            var valueFunc = valueFactory.Compile();
+            //var valueFunc = valueFactory.Compile();
 
             PipeAction<TModel> s =async (writer, model) =>
             {
                 await writer.WritePropertyNameAsync(propertyName);
 
-                var value = valueFunc(model);
+                var value = valueFactory(model);
 
                 await writer.WriteValueAsync(value);
             };

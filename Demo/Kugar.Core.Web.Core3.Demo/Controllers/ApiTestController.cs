@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Kugar.Core.BaseStruct;
 using Kugar.Core.ExtMethod;
 using Kugar.Core.Web.ActionResult;
+using Kugar.Core.Web.Controllers;
 using Kugar.Core.Web.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -26,7 +27,7 @@ using ValueTuple = System.ValueTuple;
 namespace Kugar.Core.Web.Core3.Demo.Controllers
 {
     [Route("apitest/[action]")]
-    public class ApiTestController : ControllerBase
+    public class ApiTestController : ControllerBase//, IJWTLoginControlle<int>
     {
         /// <summary>
         /// fsdfsfs

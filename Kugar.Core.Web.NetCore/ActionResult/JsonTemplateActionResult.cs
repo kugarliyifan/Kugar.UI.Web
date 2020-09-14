@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Xml;
 
 using System.Diagnostics;
@@ -961,7 +962,17 @@ namespace Kugar.Core.Web.ActionResult
 
             if (string.IsNullOrWhiteSpace(desciption))
             {
-                desciption = _typeXmlDesc.TryGetValue(property.Member.Name, "");
+                desciption = _typeXmlDesc.TryGetValue( property.Member.Name, "");
+
+                if (string.IsNullOrWhiteSpace(desciption))
+                {
+                    desciption = property.Member.GetCustomAttribute<DescriptionAttribute>()?.Description;
+                }
+
+                if (string.IsNullOrWhiteSpace(desciption))
+                {
+                    desciption = property.Member.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName;
+                }
             }
 
             if (type == null)

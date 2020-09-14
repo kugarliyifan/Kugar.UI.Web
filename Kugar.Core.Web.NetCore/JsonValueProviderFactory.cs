@@ -603,7 +603,10 @@ namespace Kugar.Core.Web
             {
                 opt.ModelBinderProviders.Insert(0, new JsonValueProviderFactory.JsonModelBinderProvider(isCaseSensitive));
                 opt.ValueProviderFactories.Insert(0, new JsonValueProviderFactory());
-
+                opt.ModelBindingMessageProvider.SetValueIsInvalidAccessor(s =>
+                {
+                    return s;
+                });
                 //var jsonFormater = (JsonOutputFormatter)opt.OutputFormatters.FirstOrDefault(x => x is JsonOutputFormatter);
 
                 //jsonFormater.PublicSerializerSettings.Converters.Add(new JObjectConverter());

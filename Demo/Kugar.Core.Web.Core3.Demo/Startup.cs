@@ -12,9 +12,11 @@ using Kugar.Core.ExtMethod;
 using Kugar.Core.Web.ActionResult;
 using Kugar.Core.Web.Core3.Demo.Controllers;
 using Kugar.Core.Web.Formatters;
+using Kugar.Core.Web.Helpers;
 using Kugar.Core.Web.Resources;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
@@ -51,7 +53,7 @@ namespace Kugar.Core.Web.Core3.Demo
                 options.SetDefaultCulture("zn-CN");
             });
 
-            services.AddLocalization();
+            services.AddLocalization(new CultureInfo("zh-cn"));
 
             services.AddHttpContextAccessor();
 
