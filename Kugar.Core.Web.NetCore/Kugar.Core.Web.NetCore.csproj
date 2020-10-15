@@ -4,14 +4,15 @@
     <TargetFrameworks>netcoreapp2.1;netcoreapp3.0;netcoreapp3.1;</TargetFrameworks>
     <RootNamespace>Kugar.Core.Web</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.0.116</Version>
+    <Version>1.0.121</Version>
     <Authors>Kugar</Authors>
     <Product>Kugar.Core.Web</Product>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
     <RazorGenerateComponentDesignTime>true</RazorGenerateComponentDesignTime>
     <Description>一个通用的Web工具类</Description>
     <PackageProjectUrl>https://github.com/kugarliyifan/Kugar.UI.Web</PackageProjectUrl>
-    <PackageReleaseNotes>增加 ModelStateErrorException 和 ModelStateValidActionResult 类,用于直接返回错误信息</PackageReleaseNotes>
+    <PackageReleaseNotes>1.JsonSchemaObjectBuilder增加一个AddObject&lt;TNewModel&gt;函数,用于返回子类的泛型
+2.JsonSchemaObjectBuilder增加AddReturnResult和AddPagedLis函数,用于处理通用类型的参数输出</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/kugarliyifan/Kugar.UI.Web</RepositoryUrl>
   </PropertyGroup>
 
@@ -58,7 +59,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Kugar.Core.NetCore" Version="1.2.111" />
+    <PackageReference Include="Kugar.Core.NetCore" Version="1.2.125" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="2.2.0" />
 
   </ItemGroup>

@@ -27,6 +27,11 @@ namespace Kugar.Core.Web.Authentications
             string displayName,
             WebJWTOption options)
         {
+            if (options.LoginService==null)
+            {
+                throw new ArgumentNullException("Options.LoginService不能为空");
+            }
+
             options.AuthenticationScheme = authenticationScheme;
 
             builder.Services.AddSingleton(typeof(OptionsManager<>));
@@ -162,7 +167,9 @@ namespace Kugar.Core.Web.Authentications
                     {
                         if (string.IsNullOrWhiteSpace(tmpOpt.LoginUrl))
                         {
-                            context.Response.Redirect($"/AdminCore/Logout/{authenticationScheme}?backurl=" + context.Request.GetDisplayUrl());
+                            context.Response.StatusCode = 401;
+
+                            //context.Response.Redirect($"/AdminCore/Logout/{authenticationScheme}?backurl=" + context.Request.GetDisplayUrl());
                         }
                         else
                         {

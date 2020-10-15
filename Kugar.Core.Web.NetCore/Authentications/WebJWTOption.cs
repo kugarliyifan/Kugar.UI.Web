@@ -29,12 +29,12 @@ namespace Kugar.Core.Web.Authentications
         /// <summary>
         /// 用于登录验证的服务接口
         /// </summary>
-        public IWebJWTLoginServkce LoginService { get; set; }
+        public IWebJWTLoginService LoginService { get; set; }
 
         /// <summary>
         /// 授权名称
         /// </summary>
-        public string AuthenticationScheme { set; get; } = "web";
+        public string AuthenticationScheme {internal set; get; } = "web";
 
         /// <summary>
         /// 过期时间,默认为30天
@@ -78,7 +78,7 @@ namespace Kugar.Core.Web.Authentications
 
 
         /// <summary>
-        /// 登录地址
+        /// 登录地址,如需设置登陆跳转界面,这需要设置该跳转地址,如不设置,授权失败后,会返回401错误
         /// </summary>
         public string LoginUrl { set; get; }
 
