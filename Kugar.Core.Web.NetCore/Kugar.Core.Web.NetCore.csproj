@@ -4,7 +4,7 @@
     <TargetFrameworks>netcoreapp2.1;netcoreapp3.0;netcoreapp3.1;</TargetFrameworks>
     <RootNamespace>Kugar.Core.Web</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.0.121</Version>
+    <Version>1.0.122</Version>
     <Authors>Kugar</Authors>
     <Product>Kugar.Core.Web</Product>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
@@ -12,7 +12,8 @@
     <Description>一个通用的Web工具类</Description>
     <PackageProjectUrl>https://github.com/kugarliyifan/Kugar.UI.Web</PackageProjectUrl>
     <PackageReleaseNotes>1.JsonSchemaObjectBuilder增加一个AddObject&lt;TNewModel&gt;函数,用于返回子类的泛型
-2.JsonSchemaObjectBuilder增加AddReturnResult和AddPagedLis函数,用于处理通用类型的参数输出</PackageReleaseNotes>
+2.JsonSchemaObjectBuilder增加AddReturnResult和AddPagedLis函数,用于处理通用类型的参数输出
+3.修改IWebJWTLoginService.Login的参数</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/kugarliyifan/Kugar.UI.Web</RepositoryUrl>
   </PropertyGroup>
 

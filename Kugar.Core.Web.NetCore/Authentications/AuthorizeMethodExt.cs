@@ -1,13 +1,13 @@
-﻿using System;
-using System.Linq;
-using System.Security.Claims;
-using Kugar.Core.ExtMethod;
+﻿using Kugar.Core.ExtMethod;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using System;
+using System.Linq;
+using System.Security.Claims;
 
 namespace Kugar.Core.Web.Authentications
 {
@@ -27,7 +27,7 @@ namespace Kugar.Core.Web.Authentications
             string displayName,
             WebJWTOption options)
         {
-            if (options.LoginService==null)
+            if (options.LoginService == null)
             {
                 throw new ArgumentNullException("Options.LoginService不能为空");
             }
@@ -36,9 +36,9 @@ namespace Kugar.Core.Web.Authentications
 
             builder.Services.AddSingleton(typeof(OptionsManager<>));
 
-            builder.Services.AddOptions().Configure<WebJWTOption>(authenticationScheme,opt =>
-            {
-                
+            builder.Services.AddOptions().Configure<WebJWTOption>(authenticationScheme, opt =>
+             {
+
                 //opt.Cookie = options.Cookie;
                 //opt.AuthenticationScheme = authenticationScheme;
                 //opt.OnTokenValidated = options.OnTokenValidated;
@@ -57,11 +57,11 @@ namespace Kugar.Core.Web.Authentications
 
             builder.AddJwtBearer(authenticationScheme, (opt) =>
             {
-                opt.Events = opt.Events?? new JwtBearerEvents();
+                opt.Events = opt.Events ?? new JwtBearerEvents();
 
                 opt.Events.OnMessageReceived = async (context) =>
                 {
-                    
+
                     var authName = context.Scheme.Name;
 
                     var tmp = (OptionsManager<WebJWTOption>)context.HttpContext.RequestServices.GetService(
@@ -69,7 +69,7 @@ namespace Kugar.Core.Web.Authentications
 
                     HttpContext.Current.Items.Remove("SchemeName");
                     HttpContext.Current.Items.Add("SchemeName", authName);//.TryGetValue("SchemeName", "")
-                    
+
                     var option = tmp.Get(authName);
 
                     if (context.HttpContext.Request.Cookies.TryGetValue(string.IsNullOrEmpty(option.Cookie?.Name) ? $"jwt.{authName}" : option.Cookie?.Name,
@@ -124,7 +124,7 @@ namespace Kugar.Core.Web.Authentications
                         var pw = context.Principal.FindFirstValue("k").DesDecrypt(tmpOpt.TokenEncKey.Left(8));
 #endif
 
-                        var ret =await tmpOpt.LoginService.Login(userName, pw);
+                        var ret = await tmpOpt.LoginService.Login(context.HttpContext, userName, pw);
 
                         if (!ret.IsSuccess)
                         {
