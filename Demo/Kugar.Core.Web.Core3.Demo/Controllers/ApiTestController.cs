@@ -27,7 +27,7 @@ using ValueTuple = System.ValueTuple;
 namespace Kugar.Core.Web.Core3.Demo.Controllers
 {
     [Route("apitest/[action]")]
-    public class ApiTestController : ControllerBase//, IJWTLoginControlle<int>
+    public class ApiTestController : ControllerBase  
     {
         /// <summary>
         /// fsdfsfs
@@ -42,6 +42,7 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
              (string key1,string key2) tupleTest
         )
         {
+            this.BuildJWtToken()
             if (!ModelState.IsValid)
             {
                 return new JsonResult(new FailResultReturn("")
