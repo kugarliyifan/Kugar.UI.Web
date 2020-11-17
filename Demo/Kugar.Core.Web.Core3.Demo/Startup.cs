@@ -31,6 +31,7 @@ using NSwag;
 using NSwag.Generation.Processors;
 using NSwag.Generation.Processors.Security;
 using DataAnnotationsResources = Kugar.Core.Web.Resources.DataAnnotationsResources;
+using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace Kugar.Core.Web.Core3.Demo
 {
@@ -132,7 +133,17 @@ namespace Kugar.Core.Web.Core3.Demo
             //    .GetType("SR")
             //    .GetField("s_resourceManager");
                 
-            
+            //JsonConvert.DefaultSettings= () =>
+            //{
+            //    return new JsonSerializerSettings()
+            //    {
+            //        DateFormatString = "yyyy-mm-dd HH:mm:ss",
+            //        ContractResolver = new DefaultContractResolver()
+            //        {
+            //            NamingStrategy = new CamelCaseNamingStrategy(true, true)
+            //}
+            //    };
+            //};
 
             services.AddControllersWithViews(opt =>
                 {
@@ -144,7 +155,15 @@ namespace Kugar.Core.Web.Core3.Demo
                 {
                     x.NamingStrategy= new CamelCaseNamingStrategy(true,true);
                 }));
-            }).AddNewtonsoftJson().EnableJsonValueModelBinder()
+            }).AddNewtonsoftJson(opt =>
+                {
+                    opt.SerializerSettings.DateFormatString = "yyyy-mm-dd HH:mm:ss";
+                    opt.SerializerSettings.ContractResolver =
+                        opt.SerializerSettings.ContractResolver ?? new DefaultContractResolver()
+                        {
+                            NamingStrategy = new CamelCaseNamingStrategy(true, true)
+                        };
+                }).EnableJsonValueModelBinder()
                 .AddDataAnnotationsLocalization(opt => {
                     opt.DataAnnotationLocalizerProvider = (type, factory) =>
                     {

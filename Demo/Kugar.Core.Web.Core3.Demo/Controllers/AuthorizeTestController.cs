@@ -7,11 +7,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Kugar.Core.Web.Core3.Demo.Controllers
 {
-    public class AuthorizeTestController : Controller,IJWTLoginControlle<int>
-    {
-        public IActionResult Index()
-        {
-            return View();
-        }
-    }
+    //public class AuthorizeTestController : Controller,IJWTLoginControlle<int>
+    //{
+    //    public IActionResult Index()
+    //    {
+    //        return View();
+    //    }
+    //}
 }

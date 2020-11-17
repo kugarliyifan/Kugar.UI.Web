@@ -42,7 +42,7 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
              (string key1,string key2) tupleTest
         )
         {
-            this.BuildJWtToken()
+            //this.BuildJWtToken()
             if (!ModelState.IsValid)
             {
                 return new JsonResult(new FailResultReturn("")
@@ -221,8 +221,8 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
     {
         protected override void BuildSchema()
         {
-            this.AddProperty("prop2",x=>x.Prop2,"sdfsfsf");
-
+            this.AddProperty("Prop2",x=>x.Prop2,"sdfsfsf");
+            this.AddProperty("Prop4", x => DateTime.Now);
             this.AddProperty("prop3", x => x.Prop1, "测试属性2");
         }
     }

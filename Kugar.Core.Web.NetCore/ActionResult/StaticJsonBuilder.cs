@@ -14,6 +14,7 @@ using Kugar.Core.ExtMethod;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using NJsonSchema;
 using NJsonSchema.Generation;
 using NSwag;
@@ -228,9 +229,11 @@ namespace Kugar.Core.Web.ActionResult
 
             //var valueFunc = valueFactory.Compile();
 
+            propertyName = SchemaBuilder.GetFormatPropertyName(propertyName);
+
             PipeAction<TModel> s = async (writer, model) =>
              {
-                 await writer.WritePropertyNameAsync(propertyName);
+                 await writer.WritePropertyNameAsync( propertyName);
 
                  var value = valueFactory(model);
 
@@ -271,7 +274,7 @@ namespace Kugar.Core.Web.ActionResult
             {
                 var caller = item;
 
-                var properyName = getPropName(caller);
+                var propertyName = SchemaBuilder.GetFormatPropertyName(getPropName(caller));
 
                 var callerReturnType = getExprReturnType(item);
 
@@ -279,7 +282,7 @@ namespace Kugar.Core.Web.ActionResult
 
                 typeBuilder.Property(item, type: _parentSchemaBulder._typeToJsonObjectType(callerReturnType), nullable: isNullable(callerReturnType));
 
-                funcList.Add((properyName, t));
+                funcList.Add((propertyName, t));
             }
 
             typeBuilder.End();
@@ -292,7 +295,7 @@ namespace Kugar.Core.Web.ActionResult
 
                  foreach (var item in funcList)
                  {
-                     await writer.WritePropertyNameAsync(item.properyName);
+                     await writer.WritePropertyNameAsync(SchemaBuilder.GetFormatPropertyName(item.properyName));
 
                      var v = item.valueCaller(inputValue);
 
@@ -326,7 +329,7 @@ namespace Kugar.Core.Web.ActionResult
             {
                 var caller = item;
 
-                var propertyName = getPropName(caller);
+                var propertyName = SchemaBuilder.GetFormatPropertyName(getPropName(caller));
 
                 //var memberExpr = getMemberExpr(caller);
 
@@ -345,7 +348,7 @@ namespace Kugar.Core.Web.ActionResult
             {
                 foreach (var item in funcList)
                 {
-                    await writer.WritePropertyNameAsync(item.propertyName);
+                    await writer.WritePropertyNameAsync(SchemaBuilder.GetFormatPropertyName(item.propertyName));
 
                     var v = item.valueCaller(model);
 
@@ -374,7 +377,7 @@ namespace Kugar.Core.Web.ActionResult
 
             var caller = propertyExpr;
 
-            var propertyName = getPropName(caller);
+            var propertyName = SchemaBuilder.GetFormatPropertyName(getPropName(caller));
 
             //var memberExpr = getMemberExpr(caller);
 
@@ -391,7 +394,7 @@ namespace Kugar.Core.Web.ActionResult
             {
                 //foreach (var item in funcList)
                 //{
-                await writer.WritePropertyNameAsync(propertyName);
+                await writer.WritePropertyNameAsync(SchemaBuilder.GetFormatPropertyName(propertyName));
 
                 var v = valueFunc(model);
 
@@ -417,6 +420,8 @@ namespace Kugar.Core.Web.ActionResult
             Expression<Func<TModel, Task<IEnumerable<TElement>>>> inputValueFactory, string desciption = "")
         {
             var inputValueFunc = inputValueFactory.Compile();
+
+            propertyName = SchemaBuilder.GetFormatPropertyName(propertyName);
 
             _parentSchemaBulder.AddArrayProperty(propertyName, desciption);
 
@@ -449,6 +454,8 @@ namespace Kugar.Core.Web.ActionResult
         /// <returns></returns>
         public JsonSchemaObjectBuilder<TValue> AddObjectFrom<TValue>(string propertyName, Expression<Func<TModel, TValue>> valueFactory, string desciption = "")
         {
+            propertyName = SchemaBuilder.GetFormatPropertyName(propertyName);
+
             if (!string.IsNullOrWhiteSpace(propertyName))
             {
                 ActionList.Add(async (writer, _) =>
@@ -485,6 +492,8 @@ namespace Kugar.Core.Web.ActionResult
         /// <returns></returns>
         public JsonSchemaObjectBuilder<TModel> AddObject(string propertyName, string desciption = "")
         {
+            SchemaBuilder.GetFormatPropertyName(propertyName);
+
             if (!string.IsNullOrWhiteSpace(propertyName))
             {
                 ActionList.Add(async (writer, _) =>
@@ -514,6 +523,8 @@ namespace Kugar.Core.Web.ActionResult
         /// <returns></returns>
         public JsonSchemaObjectBuilder<TNewModel> AddObject<TNewModel>(string propertyName, Func<TModel, TNewModel> valueFactory = null, string desciption = "")
         {
+            propertyName = SchemaBuilder.GetFormatPropertyName(propertyName);
+
             if (!string.IsNullOrWhiteSpace(propertyName))
             {
                 ActionList.Add(async (writer, _) =>
@@ -567,6 +578,8 @@ namespace Kugar.Core.Web.ActionResult
         /// <returns></returns>
         public JsonSchemaObjectBuilder<TElement> AddArrayObject<TElement>(string propertyName, Expression<Func<TModel, IEnumerable<TElement>>> loopValueFactory, string desciption = "")
         {
+            propertyName = SchemaBuilder.GetFormatPropertyName(propertyName);
+
             if (!string.IsNullOrWhiteSpace(propertyName))
             {
                 ActionList.Add(async (writer, _) =>
@@ -626,7 +639,7 @@ namespace Kugar.Core.Web.ActionResult
             {
                 await writer.WriteEndObjectAsync();
 
-                await writer.FlushAsync();
+                //await writer.FlushAsync();
             });
 
             _parentSchemaBulder.Dispose();
@@ -819,7 +832,7 @@ namespace Kugar.Core.Web.ActionResult
                         (IOptions<AspNetCoreOpenApiDocumentGeneratorSettings>)HttpContext.Current.RequestServices.GetService(
                             typeof(IOptions<AspNetCoreOpenApiDocumentGeneratorSettings>));
 
-                    var g = HttpContext.Current.RequestServices.GetService(typeof(JsonSchemaGenerator));
+                    var g = (JsonSchemaGenerator)HttpContext.Current.RequestServices.GetService(typeof(JsonSchemaGenerator));
 
                     //var register = (OpenApiDocumentRegistration)HttpContext.Current.RequestServices.GetService(typeof(OpenApiDocumentRegistration));
 
@@ -828,14 +841,28 @@ namespace Kugar.Core.Web.ActionResult
                     var document = new OpenApiDocument();
                     //var settings = new AspNetCoreOpenApiDocumentGeneratorSettings();
                     var schemaResolver = new OpenApiSchemaResolver(document, opt.Value);
-                    var generator = new JsonSchemaGenerator(opt.Value);
+                    var generator =  g?? new JsonSchemaGenerator(opt.Value);
 
                     Resolver = schemaResolver;
                     Generator = generator;
 
+                    DefaultContractResolver jsonResolver = null;
+
                     var scheme = new JsonSchema();
 
-                    var builder = new JsonObjectSchemeBuilder(scheme.Properties, s => s);
+                    #if NETCOREAPP3_0 || NETCOREAPP3_1
+                    var jsonOpt = (IOptionsSnapshot<MvcNewtonsoftJsonOptions>)HttpContext.Current.RequestServices.GetService(typeof(IOptions<MvcNewtonsoftJsonOptions>));
+
+                    jsonResolver = jsonOpt.Value.SerializerSettings.ContractResolver as DefaultContractResolver;
+
+                    //var _defaultSettings = opt.Value.SerializerSettings;
+#endif
+#if NETCOREAPP2_1
+                    jsonResolver = JsonConvert.DefaultSettings?.Invoke().ContractResolver as DefaultContractResolver;
+                    //var _defaultSettings = JsonConvert.DefaultSettings?.Invoke();
+#endif
+
+                    var builder = new JsonObjectSchemeBuilder(scheme.Properties, s => jsonResolver.GetResolvedPropertyName(s));
 
                     SchemaBuilder = builder;
                 }
@@ -878,7 +905,7 @@ namespace Kugar.Core.Web.ActionResult
 
                 stream.Position = 0;
 
-                data = Encoding.UTF8.GetString(stream.ToArray());
+                //data = Encoding.UTF8.GetString(stream.ToArray());
             }
         }
 
@@ -894,10 +921,28 @@ namespace Kugar.Core.Web.ActionResult
 
             //using (var stream = new MemoryStream())
 
+
+#if NETCOREAPP3_0 || NETCOREAPP3_1
+            var opt =
+                ((IOptions<MvcNewtonsoftJsonOptions>)context.HttpContext.RequestServices.GetService(
+                    typeof(IOptions<MvcNewtonsoftJsonOptions>)))?.Value?.SerializerSettings?? JsonConvert.DefaultSettings?.Invoke() ?? new JsonSerializerSettings();
+#else
+            var opt = JsonConvert.DefaultSettings?.Invoke() ?? new JsonSerializerSettings();
+#endif
+
+
             using (var textWriter = new StreamWriter(/*stream*/context.HttpContext.Response.Body, Encoding.UTF8))
             using (var writer = new JsonTextWriter(textWriter))
             {
+                //writer.DateFormatString = "yyyy-MM-dd HH:mm:ss";
                 //writer.WriteStartObject();
+
+
+                writer.Formatting = opt.Formatting;
+                writer.DateFormatString = opt.DateFormatString;
+                writer.DateFormatHandling = opt.DateFormatHandling;
+                writer.Culture = opt.Culture;
+                
 
                 foreach (var action in lst)
                 {

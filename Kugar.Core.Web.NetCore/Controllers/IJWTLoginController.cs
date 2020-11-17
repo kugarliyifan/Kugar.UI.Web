@@ -20,7 +20,7 @@ namespace Kugar.Core.Web.Controllers
 {
     public static class JWTControllerLoginExt
     {
-        public static void LoginJWTWithCookie(this ControllerBase controller, string userID, string password)
+        public static void LoginJWTWithCookie(this ControllerBase controller, string userID, string password, params (string key, string value)[] values)
         {
             var optManager =
                 (OptionsManager<WebJWTOption>) controller.HttpContext.RequestServices.GetService(
@@ -28,7 +28,7 @@ namespace Kugar.Core.Web.Controllers
             var scheme = GetCurrentSchemeName(controller);
             var option = optManager.Get(scheme);
 
-            var token = BuildJWtToken(controller, userID, password, option);
+            var token = BuildJWtToken(controller, userID, password, values, option);
 
             var cookieName = string.IsNullOrEmpty(option.Cookie?.Name)
                 ? $"jwt.{scheme}"
@@ -37,6 +37,13 @@ namespace Kugar.Core.Web.Controllers
             controller.Response.Cookies.Append(cookieName, token, option.Cookie?.Build(controller.HttpContext));
         }
 
+        public static void LoginJWTWithCookie(this ControllerBase controller, string userID, string password, (string key, string value)[] values,
+            CookieBuilder cookieBuilder)
+        {
+            var token = BuildJWtToken(controller, userID, password, values);
+
+            controller.Response.Cookies.Append(cookieBuilder.Name, token, cookieBuilder?.Build(controller.HttpContext));
+        }
 
         public static void LoginJWTWithCookie(this ControllerBase controller, string userID, string password,
             CookieBuilder cookieBuilder)
@@ -46,7 +53,7 @@ namespace Kugar.Core.Web.Controllers
             controller.Response.Cookies.Append(cookieBuilder.Name, token, cookieBuilder?.Build(controller.HttpContext));
         }
 
-        public static string BuildJWtToken(this ControllerBase controller, string userID, string password)
+        public static string BuildJWtToken(this ControllerBase controller, string userID, string password,params (string key, string value)[] values)
         {
             var optManager =
                 (OptionsManager<WebJWTOption>) controller.HttpContext.RequestServices.GetService(
@@ -60,25 +67,36 @@ namespace Kugar.Core.Web.Controllers
 
             var option = optManager.Get(GetCurrentSchemeName(controller));
 
-            return BuildJWtToken(controller, userID, password, option);
+            return BuildJWtToken(controller, userID, password, values, option);
         }
 
-        public static string BuildJWtToken(this ControllerBase controller, string userID, string password,
+        public static string BuildJWtToken(this ControllerBase controller, string userID,string password,(string key,string value)[] values,
             WebJWTOption option)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
 
             var authTime = DateTime.UtcNow;
             var expiresAt = authTime.Add(option.ExpireTimeSpan);
+
+            var lst=new List<Claim>()
+            {
+                new Claim("aud", option.Audience),
+                new Claim("iss", option.Issuer),
+                new Claim(ClaimTypes.NameIdentifier, userID),
+                new Claim("k", password.DesEncrypt(option.TokenEncKey.Left(8))),
+            };
+
+            if (values.HasData())
+            {
+                foreach (var item in values)
+                {
+                    lst.Add(new Claim(item.key,item.value));
+                }
+            }
+
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new Claim[]
-                {
-                    new Claim("aud", option.Audience),
-                    new Claim("iss", option.Issuer),
-                    new Claim("k", password.DesEncrypt(option.TokenEncKey.Left(8))),
-                    new Claim(ClaimTypes.NameIdentifier, userID)
-                }),
+                Subject = new ClaimsIdentity(lst),
                 Expires = expiresAt,
                 SigningCredentials =
                     new SigningCredentials(new SymmetricSecurityKey(option.ActualEncKey),

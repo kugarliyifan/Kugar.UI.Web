@@ -12,20 +12,27 @@ namespace Kugar.Core.Web.Services
 {
     public interface IBackgroundTaskQueue
     {
-        void QueueBackgroundWorkItem(Func<CancellationToken, Task> workItem);
+        /// <summary>
+        /// 将一个任务入队
+        /// </summary>
+        /// <param name="workItem"></param>
+        void QueueBackgroundWorkItem(QueueHosedInvoker workItem);
 
-        Task<Func<CancellationToken, Task>> DequeueAsync(
+        Task<QueueHosedInvoker> DequeueAsync(
             CancellationToken cancellationToken);
     }
 
+    /// <summary>
+    /// 用于后端的任务队列
+    /// </summary>
     public class BackgroundTaskQueue : IBackgroundTaskQueue
     {
-        private ConcurrentQueue<Func<CancellationToken, Task>> _workItems =
-            new ConcurrentQueue<Func<CancellationToken, Task>>();
+        private ConcurrentQueue<QueueHosedInvoker> _workItems =
+            new ConcurrentQueue<QueueHosedInvoker>();
         private SemaphoreSlim _signal = new SemaphoreSlim(0);
 
         public void QueueBackgroundWorkItem(
-            Func<CancellationToken, Task> workItem)
+            QueueHosedInvoker workItem)
         {
             if (workItem == null)
             {
@@ -36,7 +43,7 @@ namespace Kugar.Core.Web.Services
             _signal.Release();
         }
 
-        public async Task<Func<CancellationToken, Task>> DequeueAsync(
+        public async Task<QueueHosedInvoker> DequeueAsync(
             CancellationToken cancellationToken)
         {
             await _signal.WaitAsync(cancellationToken);
@@ -46,45 +53,66 @@ namespace Kugar.Core.Web.Services
         }
     }
 
+    public delegate Task QueueHosedInvoker(IServiceProvider provider, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 在后台中,使用队列的方式执行任务
+    /// </summary>
     public class QueuedHostedService : BackgroundService
     {
         private readonly ILogger _logger;
+        private IServiceProvider _provider;
+        private IBackgroundTaskQueue _taskQueue;
 
-        public QueuedHostedService(IBackgroundTaskQueue taskQueue,
+        public QueuedHostedService(IBackgroundTaskQueue taskQueue, IServiceProvider provider,
             ILoggerFactory loggerFactory)
         {
-            TaskQueue = taskQueue;
             _logger = loggerFactory?.CreateLogger<QueuedHostedService>();
+            _provider = provider;
+            _taskQueue = taskQueue;
         }
 
-        public IBackgroundTaskQueue TaskQueue { get; }
+        public IBackgroundTaskQueue TaskQueue => _taskQueue;
 
-        protected async override Task ExecuteAsync(
+        protected override async Task ExecuteAsync(
             CancellationToken cancellationToken)
         {
-            _logger?.LogInformation("Queued Hosted Service is starting.");
+            _logger?.LogInformation("任务队列服务开始启动");
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                var workItem = await TaskQueue.DequeueAsync(cancellationToken);
+                var workItem = await _taskQueue.DequeueAsync(cancellationToken);
 
-                try
+                if (workItem == null)
                 {
-                    await workItem(cancellationToken);
+                    continue;
                 }
-                catch (Exception ex)
+                using (var scope = _provider.CreateScope())
                 {
-                    _logger?.LogError(ex,
-                        "Error occurred executing {WorkItem}.", nameof(workItem));
+                    try
+                    {
+
+                        await workItem(scope.ServiceProvider, cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogError(ex,
+                            $"出发任务项目错误:{workItem.GetType().FullName}");
+                    }
                 }
             }
 
-            _logger?.LogInformation("Queued Hosted Service is stopping.");
+            _logger?.LogInformation("队列暂停中");
         }
     }
 
     public static class QueuedHostedServiceGlobalExt
     {
+        /// <summary>
+        /// 注入一个后台队列任务管理器,在需要使用的地方,注入IBackgroundTaskQueue类即可
+        /// </summary>
+        /// <param name="services"></param>
+        /// <returns></returns>
         public static IServiceCollection UseQueuedTaskService(this IServiceCollection services)
         {
             services.AddHostedService<QueuedHostedService>();

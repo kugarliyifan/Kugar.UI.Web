@@ -876,6 +876,11 @@ namespace Kugar.Core.Web.ActionResult
                 return JsonObjectType.Object;
             }
         }
+
+        public string GetFormatPropertyName(string name)
+        {
+            return _getPropertyTitle?.Invoke(name) ?? name;
+        }
     }
 
 
@@ -1134,10 +1139,11 @@ namespace Kugar.Core.Web.ActionResult
 
 #if NETCOREAPP3_0 || NETCOREAPP3_1
                     var options =
-                                (IOptions<MvcNewtonsoftJsonOptions>)Kugar.Core.Web.HttpContext.Current.RequestServices.GetService(
-                                    typeof(IOptions<MvcNewtonsoftJsonOptions>));
-                    contactResolver = options.Value.SerializerSettings.ContractResolver as DefaultContractResolver;
+                        ((IOptions<MvcNewtonsoftJsonOptions>)HttpContext.Current.RequestServices.GetService(
+                            typeof(IOptions<MvcNewtonsoftJsonOptions>)))?.Value?.SerializerSettings ?? JsonConvert.DefaultSettings?.Invoke() ?? new JsonSerializerSettings();
 
+                    contactResolver = options?.ContractResolver as DefaultContractResolver;
+                    
 #endif
 #if NETCOREAPP2_1
                     contactResolver = JsonConvert.DefaultSettings?.Invoke().ContractResolver as DefaultContractResolver;
