@@ -7,7 +7,7 @@ using Microsoft.Extensions.Hosting;
 namespace Kugar.Core.Web.Services
 {
     /// <summary>
-    /// 用于在后台执行一个定时任务,用于取代TimeEx,在asp.net core的环境下使用,继承该类后,使用 services.AddHostedService&gt;当前类类型&lt;();后,自动在后台启动当前定时任务
+    /// 用于在后台执行一个定时任务,用于取代TimeEx,在asp.net core的环境下使用,继承该类后,使用 services.AddHostedService&lt;当前类类型&gt;();后,自动在后台启动当前定时任务
     /// </summary>
     public abstract class TimerHostedService : BackgroundService
     {
@@ -19,24 +19,29 @@ namespace Kugar.Core.Web.Services
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        { 
-            while (!stoppingToken.IsCancellationRequested)
+        {
+            if (Enabled && Internal>0)
             {
-                await Task.Delay(Internal, stoppingToken);
-
-                using (var scope = _provider.CreateScope())
+                while (!stoppingToken.IsCancellationRequested)
                 {
-                    try
+                    await Task.Delay(Internal, stoppingToken);
+
+                    using (var scope = _provider.CreateScope())
                     {
-                        await Run(scope.ServiceProvider, stoppingToken);
+                        try
+                        {
+                            await Run(scope.ServiceProvider, stoppingToken);
+                        }
+                        catch (Exception e)
+                        {
+
+                        }
+
                     }
-                    catch (Exception e)
-                    {
-                        
-                    }
-                    
                 }
             }
+
+            
 
             return;
         }
@@ -53,5 +58,10 @@ namespace Kugar.Core.Web.Services
         /// 定时器间隔触发时间,单位是ms
         /// </summary>
         protected abstract int Internal {  get; }
+
+        /// <summary>
+        /// 当前定时器是否启用,true为定时器有效,false为停用
+        /// </summary>
+        public virtual bool Enabled { set; get; } = true;
     }
 }

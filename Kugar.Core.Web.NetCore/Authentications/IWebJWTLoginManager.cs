@@ -9,6 +9,6 @@ namespace Kugar.Core.Web.Authentications
 {
     public interface IWebJWTLoginService
     {
-        Task<ResultReturn<string>> Login(Microsoft.AspNetCore.Http.HttpContext request, string userName, string password, bool isNeedEncoding = false);
+        Task<ResultReturn<string>> Login(Microsoft.AspNetCore.Http.HttpContext context, string userName, string password, bool isNeedEncoding = false);
     }
 }

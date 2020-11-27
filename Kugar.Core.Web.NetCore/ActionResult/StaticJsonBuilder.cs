@@ -882,36 +882,38 @@ namespace Kugar.Core.Web.ActionResult
 
         protected abstract void BuildSchema();
 
-        public void Execute(TModel model)
-        {
-            var lst = Build();
+        //void  IActionResult.Execute(TModel model)
+        //{
+        //    var lst = Build();
 
-            var data = "";
+        //    var data = "";
 
-            using (var stream = new MemoryStream())
-            using (var textWriter = new StreamWriter(stream))
-            using (var writer = new JsonTextWriter(textWriter))
-            {
-                //writer.WriteStartObject();
+        //    using (var stream = new MemoryStream())
+        //    using (var textWriter = new StreamWriter(stream))
+        //    using (var writer = new JsonTextWriter(textWriter))
+        //    {
+        //        //writer.WriteStartObject();
 
-                foreach (var action in lst)
-                {
-                    action(writer, model);
-                }
+        //        foreach (var action in lst)
+        //        {
+        //            action(writer, model);
+        //        }
 
-                //writer.WriteEndObject();
+        //        //writer.WriteEndObject();
 
-                writer.Flush();
+        //        writer.Flush();
 
-                stream.Position = 0;
+        //        stream.Position = 0;
 
-                //data = Encoding.UTF8.GetString(stream.ToArray());
-            }
-        }
+        //        //data = Encoding.UTF8.GetString(stream.ToArray());
+        //    }
+        //}
 
         public TModel Model { set; get; }
 
-        public async Task ExecuteResultAsync(ActionContext context)
+        private static JsonSerializerSettings _defaultJsonSerializerSettings=new JsonSerializerSettings();
+
+        async Task IActionResult.ExecuteResultAsync(ActionContext context)
         {
             var lst = Build();
 
@@ -925,9 +927,9 @@ namespace Kugar.Core.Web.ActionResult
 #if NETCOREAPP3_0 || NETCOREAPP3_1
             var opt =
                 ((IOptions<MvcNewtonsoftJsonOptions>)context.HttpContext.RequestServices.GetService(
-                    typeof(IOptions<MvcNewtonsoftJsonOptions>)))?.Value?.SerializerSettings?? JsonConvert.DefaultSettings?.Invoke() ?? new JsonSerializerSettings();
+                    typeof(IOptions<MvcNewtonsoftJsonOptions>)))?.Value?.SerializerSettings?? JsonConvert.DefaultSettings?.Invoke() ?? _defaultJsonSerializerSettings;
 #else
-            var opt = JsonConvert.DefaultSettings?.Invoke() ?? new JsonSerializerSettings();
+            var opt = JsonConvert.DefaultSettings?.Invoke() ?? _defaultJsonSerializerSettings;
 #endif
 
 

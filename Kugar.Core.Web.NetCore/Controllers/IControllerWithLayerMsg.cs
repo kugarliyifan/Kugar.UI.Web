@@ -32,7 +32,7 @@ namespace Kugar.Core.Web.Controllers
             {
                 MsgBoxAndGoto(c,message, referer.FirstOrDefault());
             }
-            else if (!string.IsNullOrWhiteSpace(defaultUrl))
+            else if (!string.IsNullOrEmpty(defaultUrl))
             {
                 MsgBoxAndGoto(c,message, defaultUrl);
             }
@@ -44,7 +44,7 @@ namespace Kugar.Core.Web.Controllers
 
         public static void MsgBoxAndRefresh(this Controller c, string msg)
         {
-            MsgBoxAndGoto(c,msg, HttpContext.Current.Request.GetDisplayUrl());
+            MsgBoxAndGoto(c,msg,c.HttpContext.Request.GetDisplayUrl());
         }
 
         /// <summary>

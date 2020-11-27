@@ -67,8 +67,8 @@ namespace Kugar.Core.Web.Authentications
                     var tmp = (OptionsManager<WebJWTOption>)context.HttpContext.RequestServices.GetService(
                         typeof(OptionsManager<WebJWTOption>));
 
-                    HttpContext.Current.Items.Remove("SchemeName");
-                    HttpContext.Current.Items.Add("SchemeName", authName);//.TryGetValue("SchemeName", "")
+                    context.HttpContext.Items.Remove("SchemeName");
+                    context.HttpContext.Items.Add("SchemeName", authName);//.TryGetValue("SchemeName", "")
 
                     var option = tmp.Get(authName);
 
@@ -123,6 +123,8 @@ namespace Kugar.Core.Web.Authentications
                         var userName = context.Principal.FindFirstValue(ClaimTypes.Name);
                         var pw = context.Principal.FindFirstValue("k").DesDecrypt(tmpOpt.TokenEncKey.Left(8));
 #endif
+                        userName = userName.Trim();
+                        pw = pw.Trim();
 
                         var ret = await tmpOpt.LoginService.Login(context.HttpContext, userName, pw);
 
@@ -134,8 +136,8 @@ namespace Kugar.Core.Web.Authentications
                         }
                     }
 
-                    HttpContext.Current.Items.Remove("SchemeName");
-                    HttpContext.Current.Items.Add("SchemeName", authName);//.TryGetValue("SchemeName", "")
+                    context.HttpContext.Items.Remove("SchemeName");
+                    context.HttpContext.Items.Add("SchemeName", authName);//.TryGetValue("SchemeName", "")
 
 
                     //HttpContext.Current.Items.Add("SchemeName", authenticationScheme);//.TryGetValue("SchemeName", "")
@@ -155,15 +157,16 @@ namespace Kugar.Core.Web.Authentications
 
                     var tmpOpt = t.Get(authName);
 
-                    HttpContext.Current.Items.Remove("SchemeName");
-                    HttpContext.Current.Items.Add("SchemeName", authName);//.TryGetValue("SchemeName", "")
+                    context.HttpContext.Items.Remove("SchemeName");
+                    context.HttpContext.Items.Add("SchemeName", authName);//.TryGetValue("SchemeName", "")
 
 
                     if (tmpOpt.OnChallenge != null)
                     {
                         await tmpOpt.OnChallenge(context);
                     }
-                    else
+                    
+                    if(!context.Handled)
                     {
                         if (string.IsNullOrWhiteSpace(tmpOpt.LoginUrl))
                         {
