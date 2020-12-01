@@ -10,6 +10,9 @@ using Newtonsoft.Json;
 
 namespace Kugar.Core.Web.ActionResult
 {
+    /// <summary>
+    /// 用于格式化输出ModelState中的错误信息
+    /// </summary>
     public class ModelStateValidActionResult:IActionResult
     {
         private int _returnCode;

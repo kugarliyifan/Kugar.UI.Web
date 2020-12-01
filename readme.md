@@ -47,7 +47,7 @@
 
 5. MyRequest类提供了一系列对Request的GetXXX系列函数以及其他通用操作函数
 
-6. HttpContext类提供了静态访问当前HttpContext的功能
+6. HttpContext类提供了静态访问当前HttpContext的功能,不建议在Asp.net Core中使用
 
     1)使用时,在start.cs中加入
     ```
@@ -61,3 +61,54 @@
         app.AddPhysicalStaticFiles("uploads","uploads");  //将uploads文件开放外部访问
     ```
 8. RequestLocal类用提供每个链接才有的数据,类似于 ThreadLocal 功能,只是作用范围是一个Request范围内
+
+9. 以View的方式输出Json,并自动生成Swagger文档
+    用于在输出Json的自定义输出,并且可根据AddProperty的方式,生成Json值输出的方式和Swagger文档所需要的内容.Swagger可用于向前端提供接口文档
+    如果选择的属性,自带文档,则可读取输入类对应的属性summary段的内容
+    ```
+    public class XXX:StaticJsonTemplateActionResult<ResultReturn<VM_PagedList<(business_Order order,business_UserCoinLog log,base_WxUser buyer,base_Activity activity)>>>
+    {
+        protected override void BuildSchema()
+        {
+            using (var r=this.AddReturnResult(Model))
+            {
+                using (var p=r.AddPagedList(x=>x))
+                {
+                    p.AddProperty(x => x.order.OrderDt, x => x.order.OrderCode, x => x.log.UnfreezeDt )
+                        .AddProperty("AwardAmount",
+                            x => (x.order.AwardAmount / x.order.Qty) * (x.order.Qty - x.order.RefundQty), "红包金额")
+                        .AddProperty("buyerUserID", x => x.buyer.UserID, "下级ID")
+                        .AddProperty("buyerNickName", x => x.buyer.NickName, "下级昵称")
+                        .AddProperty(x => x.buyer.HeaderPortraitUrl, "下级头像")
+                        .AddProperty(x => x.activity.ActivityID, x => x.activity.Title,x=>x.activity.MainImageUrl)
+                        ;
+                }
+            }
+            
+        }
+    }
+    ```
+
+10.ModelStateValidActionResult 用于格式化输出ModelState中的错误信息
+    在Action中
+    ```
+    return new ModelStateValidActionResult(ModelState);
+    ```
+
+11. TimerHostedService:用于在后台执行一个定时任务,建议在Asp.net Core下使用该类替换TimerEx
+    用于取代TimeEx,在asp.net core的环境下使用,继承该类后,使用 services.AddHostedService&lt;当前类类型&gt;();后,自动在后台启动当前定时任务,并且可以使用到Ioc中注册的类
+  
+12. BackgroundTaskQueue 用于后台使用的队列处理类
+
+    在Start中
+    ```
+    services.UseQueuedTaskService()
+    ```
+
+    在Action中:
+    ```
+    public async Task<IActionResult> xx([FromService]BackgroundTaskQueue queue)
+    {
+        queue.QueueBackgroundWorkItem()  //加入一个待处理的任务
+    }
+    ```
