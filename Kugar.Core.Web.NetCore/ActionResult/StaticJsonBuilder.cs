@@ -156,7 +156,7 @@ namespace Kugar.Core.Web.ActionResult
         private static ConcurrentDictionary<Type, List<PipeAction<TModel>>> _cacheActionList = new ConcurrentDictionary<Type, List<PipeAction<TModel>>>();
         private JsonObjectSchemeBuilder _parentSchemaBulder = null;
         private List<PipeAction<TModel>> _currentList = null;
-
+        private bool _hasStart = false;
 
         public JsonSchemaObjectBuilder(List<PipeAction<TModel>> lst, JsonObjectSchemeBuilder schemaBuilder)
         {
@@ -208,6 +208,8 @@ namespace Kugar.Core.Web.ActionResult
             {
                 await writer.WriteStartObjectAsync();
             });
+
+            _hasStart = true;
 
             return this;
         }
@@ -451,43 +453,43 @@ namespace Kugar.Core.Web.ActionResult
             return this;
         }
 
-        /// <summary>
-        /// 添加一个对象属性,,可用using结尾,或End()结尾
-        /// </summary>
-        /// <param name="propertyName"></param>
-        /// <param name="desciption"></param>
-        /// <returns></returns>
-        public JsonSchemaObjectBuilder<TValue> AddObjectFrom<TValue>(string propertyName, Expression<Func<TModel, TValue>> valueFactory, string desciption = "")
-        {
-            propertyName = SchemaBuilder.GetFormatPropertyName(propertyName);
+        ///// <summary>
+        ///// 添加一个对象属性,,可用using结尾,或End()结尾
+        ///// </summary>
+        ///// <param name="propertyName"></param>
+        ///// <param name="desciption"></param>
+        ///// <returns></returns>
+        //public JsonSchemaObjectBuilder<TValue> AddObjectFrom<TValue>(string propertyName, Expression<Func<TModel, TValue>> valueFactory, string desciption = "")
+        //{
+        //    propertyName = SchemaBuilder.GetFormatPropertyName(propertyName);
 
-            if (!string.IsNullOrWhiteSpace(propertyName))
-            {
-                ActionList.Add(async (writer, _) =>
-                {
-                    await writer.WritePropertyNameAsync(propertyName);
-                });
-            }
-            else
-            {
-                throw new ArgumentNullException(nameof(propertyName));
-            }
+        //    if (!string.IsNullOrWhiteSpace(propertyName))
+        //    {
+        //        ActionList.Add(async (writer, _) =>
+        //        {
+        //            await writer.WritePropertyNameAsync(propertyName);
+        //        });
+        //    }
+        //    else
+        //    {
+        //        throw new ArgumentNullException(nameof(propertyName));
+        //    }
 
-            var c = _parentSchemaBulder.AddObjectProperty(propertyName, desciption);
+        //    var c = _parentSchemaBulder.AddObjectProperty(propertyName, desciption);
 
-            var actionList = new List<PipeAction<TValue>>();
+        //    var actionList = new List<PipeAction<TValue>>();
 
-            var s = new JsonSchemaObjectBuilder<TValue>(actionList, c);
+        //    var s = new JsonSchemaObjectBuilder<TValue>(actionList,c);
 
-            s.Start();
+        //    s.Start();
 
-            //s.OnEndCallback+= bulder
-            //{
+        //    //s.OnEndCallback+= bulder
+        //    //{
 
-            //}
+        //    //}
 
-            return s;
-        }
+        //    return s;
+        //}
 
         /// <summary>
         /// 添加一个对象属性,,可用using结尾,或End()结尾
@@ -551,6 +553,18 @@ namespace Kugar.Core.Web.ActionResult
             return s;
         }
 
+        /// <summary>
+        /// 将指定valueFactory生成的数据添加到当前对象,与AddObject不同的是,本函数直接添加在当前对象中,而非添加一个{  key:{}} 的子属性对象,与AddPropertyFrom类似,但是本函数ValueFactory只执行一次
+        /// </summary>
+        /// <typeparam name="TNewModel"></typeparam>
+        /// <param name="valueFactory"></param>
+        /// <returns></returns>
+        public JsonSchemaObjectBuilder<TNewModel> FromObject<TNewModel>(Func<TModel, TNewModel> valueFactory)
+        {
+            var s = new JsonSchemaChildObjectBuilder<TModel,TNewModel>(ActionList,valueFactory,new List<PipeAction<TNewModel>>(), this.SchemaBuilder);
+
+            return s;
+        }
 
         //protected JsonSchemaObjectBuilder<TElement> AddObject<TElement>(string propertyName,JsonValueFactory<TModel, TElement> valueFactory)
         //{
@@ -640,16 +654,22 @@ namespace Kugar.Core.Web.ActionResult
 
         public virtual void End()
         {
-            ActionList.Add(async (writer, model) =>
+            if (_hasStart)
             {
-                await writer.WriteEndObjectAsync();
+                ActionList.Add(async (writer, model) =>
+                {
 
-                //await writer.FlushAsync();
-            });
+                    await writer.WriteEndObjectAsync();
 
-            _parentSchemaBulder.Dispose();
+                    //await writer.FlushAsync();
+                });
 
-            OnEndCallback?.Invoke(this);
+                _parentSchemaBulder.Dispose();
+
+                OnEndCallback?.Invoke(this);
+            }
+
+            
         }
 
         public virtual void Dispose()
@@ -993,59 +1013,234 @@ namespace Kugar.Core.Web.ActionResult
 
     public static class StaticJsonBuilderExt
     {
-        public static JsonSchemaObjectBuilder<TValue> AddReturnResult<TModel, TValue>(this JsonSchemaObjectBuilder<TModel> builder, IResultReturn<TValue> result)
-            where TModel : IResultReturn<TValue>
+        /// <summary>
+        /// 用于需要在在传入model的时候未包含ResultReturn结构,但在返回的时候,需要一个公用的ResultReturn的外框结构的情况下使用
+        /// </summary>
+        /// <typeparam name="TModel"></typeparam>
+        /// <param name="builder"></param>
+        /// <param name="resultFactory">可在函数中根据Model中的内容判断是否成功等操作</param>
+        /// <returns></returns>
+        public static JsonSchemaObjectBuilder<TModel> AddReturnResult<TModel>(this JsonSchemaObjectBuilder<TModel> builder,Func<TModel,(bool isSuccess,int returnCode,string message)> resultFactory)
         {
-            builder.AddProperty("IsSuccess", x => result.IsSuccess,"操作是否成功")
-                .AddProperty("Message", x => result.Message,"返回的提示信息")
-                .AddProperty("ReturnCode", x => result.ReturnCode,"操作结果代码")
-                .AddProperty("Error", x => result.Error?.Message,"错误信息");
+            builder.FromObject(resultFactory)
+                .AddProperty("IsSuccess", x => x.isSuccess,"操作是否成功")
+                .AddProperty("Message", x => x.message,"返回的提示信息")
+                .AddProperty("ReturnCode", x => x.returnCode,"操作结果代码")
+                .AddProperty("Error", x => x.isSuccess?x.message:"","错误信息");
+
+            return builder.AddObject<TModel>("ReturnData", x => x);
+        }
+
+        /// <summary>
+        /// 用于需要在在传入model的时候未包含ResultReturn结构,但在返回的时候,需要一个公用的ResultReturn的外框结构的情况下使用
+        /// </summary>
+        /// <typeparam name="TModel"></typeparam>
+        /// <param name="builder"></param>
+        /// <param name="resultFactory">可在函数中根据Model中的内容判断是否成功等操作</param>
+        /// <returns></returns>
+        public static JsonSchemaObjectBuilder<TModel> AddReturnResult<TModel>(this JsonSchemaObjectBuilder<TModel> builder,Func<TModel,(bool isSuccess,string message)> resultFactory)
+        {
+            builder.FromObject(resultFactory)
+                .AddProperty("IsSuccess", x => x.isSuccess,"操作是否成功")
+                .AddProperty("Message", x => x.message,"返回的提示信息")
+                .AddProperty("ReturnCode", x => 0,"操作结果代码")
+                .AddProperty("Error", x => x.isSuccess?x.message:"","错误信息");
+
+            return builder.AddObject<TModel>("ReturnData", x => x);
+        }
+
+
+        /// <summary>
+        /// 添加当前对象的关于ReturnResult的通用属性,并返回returnData对象的构建器
+        /// </summary>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="builder"></param>
+        /// <returns></returns>
+        public static JsonSchemaObjectBuilder<TValue> AddReturnResult< TValue>(this JsonSchemaObjectBuilder<ResultReturn<TValue>> builder)
+        {
+            builder.AddProperty("IsSuccess", x => x.IsSuccess,"操作是否成功")
+                .AddProperty("Message", x => x.Message,"返回的提示信息")
+                .AddProperty("ReturnCode", x => x.ReturnCode,"操作结果代码")
+                .AddProperty("Error", x => x.Error?.Message,"错误信息");
 
             return builder.AddObject<TValue>("ReturnData", x => x.GetResultData());
         }
 
-        public static JsonSchemaObjectBuilder<TReturnData> AddReturnResult<TModel, TReturnData>(this JsonSchemaObjectBuilder<TModel> builder, ResultReturn result)
+        /// <summary>
+        /// 添加当前对象的关于ReturnResult的通用属性,并通过returnDataConverter参数,重新转换returnData中的类型,并返回returnData对象的构建器
+        /// </summary>
+        /// <typeparam name="TModel"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="builder"></param>
+        /// <param name="returnDataConverter"></param>
+        /// <returns></returns>
+        public static JsonSchemaObjectBuilder<TValue> AddReturnResult<TValue>(this JsonSchemaObjectBuilder<ResultReturn> builder,Func<object,TValue> returnDataConverter)
         {
-            builder.AddProperty("IsSuccess", x => result.IsSuccess,"操作是否成功")
-                .AddProperty("Message", x => result.Message,"返回的提示信息")
-                .AddProperty("ReturnCode", x => result.ReturnCode,"操作结果代码")
-                .AddProperty("Error", x => result.Error?.Message,"错误信息");
+            builder.AddProperty("IsSuccess", x => x.IsSuccess,"操作是否成功")
+                .AddProperty("Message", x => x.Message,"返回的提示信息")
+                .AddProperty("ReturnCode", x => x.ReturnCode,"操作结果代码")
+                .AddProperty("Error", x => x.Error?.Message,"错误信息");
 
-            return builder.AddObject("ReturnData", x => (TReturnData)result.ReturnData);
+            return builder.AddObject<TValue>("ReturnData", x => returnDataConverter(x.ReturnData));
         }
 
-        public static JsonSchemaObjectBuilder<TReturnData> AddReturnResult<TModel, TReturnData>(this JsonSchemaObjectBuilder<TModel> builder, ResultReturn result, Func<object, TReturnData> valueFactory)
+        /// <summary>
+        /// 从valueFactory中创建一个ResultReturn对象,并返回returnData参数对象的构建器
+        /// </summary>
+        /// <typeparam name="TModel"></typeparam>
+        /// <typeparam name="TReturnData"></typeparam>
+        /// <param name="builder"></param>
+        /// <param name="valueFactory"></param>
+        /// <returns></returns>
+        public static JsonSchemaObjectBuilder<TReturnData> AddReturnResult<TModel, TReturnData>(this JsonSchemaObjectBuilder<TModel> builder, Func<TModel,ResultReturn> valueFactory)
+        {
+            using (var b=builder.FromObject(valueFactory))
+            {
+                b.AddProperty("IsSuccess", x => x.IsSuccess,"操作是否成功")
+                    .AddProperty("Message", x => x.Message,"返回的提示信息")
+                    .AddProperty("ReturnCode", x => x.ReturnCode,"操作结果代码")
+                    .AddProperty("Error", x => x.Error?.Message,"错误信息");
+            
+                return b.AddObject("ReturnData", x =>  (TReturnData)x.ReturnData);
+            }
+
+            //builder.AddProperty("IsSuccess", x => result.IsSuccess, "操作是否成功")
+            //    .AddProperty("Message", x => result.Message, "返回的提示信息")
+            //    .AddProperty("ReturnCode", x => result.ReturnCode, "操作结果代码")
+            //    .AddProperty("Error", x => result.Error?.Message, "错误信息");
+
+            //return builder.AddObject("ReturnData", x => (TReturnData)result.ReturnData);
+        }
+
+        /// <summary>
+        /// 从valueFactory中创建一个ResultReturn对象,并返回returnData参数对象的构建器
+        /// </summary>
+        /// <typeparam name="TModel"></typeparam>
+        /// <typeparam name="TReturnData"></typeparam>
+        /// <param name="builder"></param>
+        /// <param name="valueFactory"></param>
+        /// <returns></returns>
+        public static JsonSchemaObjectBuilder<TReturnData> AddReturnResult<TModel, TReturnData>(this JsonSchemaObjectBuilder<TModel> builder,Func<TModel,ResultReturn<TReturnData>> valueFactory)
         {
             Debug.Assert(valueFactory != null);
 
-            builder.AddProperty("IsSuccess", x => result.IsSuccess,"操作是否成功")
-                .AddProperty("Message", x => result.Message,"返回的提示信息")
-                .AddProperty("ReturnCode", x => result.ReturnCode,"操作结果代码")
-                .AddProperty("Error", x => result.Error?.Message,"错误信息");
+            using (var b=builder.FromObject(valueFactory))
+            {
+                b.AddProperty("IsSuccess", x => x.IsSuccess,"操作是否成功")
+                    .AddProperty("Message", x => x.Message,"返回的提示信息")
+                    .AddProperty("ReturnCode", x => x.ReturnCode,"操作结果代码")
+                    .AddProperty("Error", x => x.Error?.Message,"错误信息");
+            
+                return b.AddObject("ReturnData", x => x.GetResultData());
+            }
 
-            return builder.AddObject("ReturnData", x => valueFactory(result.ReturnData));
         }
 
+        /// <summary>
+        /// 添加一个ReturnData返回类型为数组的ReturnResult对象,并且该对象可以从valueFactory中获取到
+        /// </summary>
+        /// <typeparam name="TElement"></typeparam>
+        /// <param name="builder"></param>
+        /// <returns></returns>
+        public static JsonSchemaObjectBuilder<TElement> AddReturnResultArray<TElement>(
+            this JsonSchemaObjectBuilder<ResultReturn<IEnumerable<TElement>>> builder)
+        {
+            using (var b=builder.FromObject(x=>x))
+            {
+                b.AddProperty("IsSuccess", x => x.IsSuccess,"操作是否成功")
+                    .AddProperty("Message", x => x.Message,"返回的提示信息")
+                    .AddProperty("ReturnCode", x => x.ReturnCode,"操作结果代码")
+                    .AddProperty("Error", x => x.Error?.Message,"错误信息");
+            
+                return b.AddArrayObject("ReturnData", x => x.GetResultData());
+            }
+
+            //builder.AddProperty("IsSuccess", x => result.IsSuccess,"操作是否成功")
+            //    .AddProperty("Message", x => result.Message,"返回的提示信息")
+            //    .AddProperty("ReturnCode", x => result.ReturnCode,"操作结果代码")
+            //    .AddProperty("Error", x => result.Error?.Message,"错误信息");
+
+            //return builder.AddArrayObject<TElement>("ReturnData", x => result.GetResultData());
+        }
+
+        /// <summary>
+        /// 添加一个ReturnData返回类型为数组的ReturnResult对象,并且该对象可以从valueFactory中获取到
+        /// </summary>
+        /// <typeparam name="TModel"></typeparam>
+        /// <typeparam name="TElement"></typeparam>
+        /// <param name="builder"></param>
+        /// <param name="valueFactory"></param>
+        /// <returns></returns>
         public static JsonSchemaObjectBuilder<TElement> AddReturnResultArray<TModel, TElement>(
             this JsonSchemaObjectBuilder<TModel> builder,
-            IResultReturn<IEnumerable<TElement>> result) where TModel : IResultReturn<IEnumerable<TElement>>
+            Func<TModel,IResultReturn<IEnumerable<TElement>>> valueFactory) where TModel : IResultReturn<IEnumerable<TElement>>
         {
-            builder.AddProperty("IsSuccess", x => result.IsSuccess,"操作是否成功")
-                .AddProperty("Message", x => result.Message,"返回的提示信息")
-                .AddProperty("ReturnCode", x => result.ReturnCode,"操作结果代码")
-                .AddProperty("Error", x => result.Error?.Message,"错误信息");
+            using (var b=builder.FromObject(valueFactory))
+            {
+                b.AddProperty("IsSuccess", x => x.IsSuccess,"操作是否成功")
+                    .AddProperty("Message", x => x.Message,"返回的提示信息")
+                    .AddProperty("ReturnCode", x => x.ReturnCode,"操作结果代码")
+                    .AddProperty("Error", x => x.Error?.Message,"错误信息");
+            
+                return b.AddArrayObject("ReturnData", x => x.GetResultData());
+            }
 
-            return builder.AddArrayObject<TElement>("ReturnData", x => result.GetResultData());
+            //builder.AddProperty("IsSuccess", x => result.IsSuccess,"操作是否成功")
+            //    .AddProperty("Message", x => result.Message,"返回的提示信息")
+            //    .AddProperty("ReturnCode", x => result.ReturnCode,"操作结果代码")
+            //    .AddProperty("Error", x => result.Error?.Message,"错误信息");
+
+            //return builder.AddArrayObject<TElement>("ReturnData", x => result.GetResultData());
         }
 
-        public static JsonSchemaObjectBuilder<TElement> AddPagedList<TModel, TElement>(this JsonSchemaObjectBuilder<TModel> bulder,
-            IPagedList<TElement> lst)
+        /// <summary>
+        /// 自动添加当前对象中关于IPagedList的属性,并返回IPagedList.Data的数组构建对象
+        /// </summary>
+        /// <typeparam name="TElement"></typeparam>
+        /// <param name="builder"></param>
+        /// <returns></returns>
+        public static JsonSchemaObjectBuilder<TElement> AddPagedList< TElement>(this JsonSchemaObjectBuilder<IPagedList<TElement>> builder)  
         {
-            return bulder.AddProperty("PageCount", x => lst.PageCount,"总页数")
-                .AddProperty("PageSize", x => lst.PageSize,"分页大小")
-                .AddProperty("PageIndex", x => lst.PageIndex,"页码")
-                .AddProperty("TotalCount", x => lst.TotalCount,"总记录数")
-                .AddArrayObject("Data", x => lst.GetData(),"数据内容");
+            using (var b=builder.FromObject(x=>x))
+            {
+                return b.AddProperty("PageCount", x => x.PageCount,"总页数")
+                    .AddProperty("PageSize", x => x.PageSize,"分页大小")
+                    .AddProperty("PageIndex", x => x.PageIndex,"页码")
+                    .AddProperty("TotalCount", x => x.TotalCount,"总记录数")
+                    .AddArrayObject("Data", x => x.GetData(),"数据内容");
+
+            }
+
+            //return bulder.AddProperty("PageCount", x => lst.PageCount,"总页数")
+            //    .AddProperty("PageSize", x => lst.PageSize,"分页大小")
+            //    .AddProperty("PageIndex", x => lst.PageIndex,"页码")
+            //    .AddProperty("TotalCount", x => lst.TotalCount,"总记录数")
+            //    .AddArrayObject("Data", x => lst.GetData(),"数据内容");
+        }
+
+        /// <summary>
+        /// 自动添加当前对象中关于IPagedList的属性,并返回IPagedList.Data的数组构建对象
+        /// </summary>
+        /// <typeparam name="TElement"></typeparam>
+        /// <param name="builder"></param>
+        /// <returns></returns>
+        public static JsonSchemaObjectBuilder<TElement> AddPagedList< TElement>(this JsonSchemaObjectBuilder<VM_PagedList<TElement>> builder)  
+        {
+            using (var b=builder.FromObject(x=>x))
+            {
+                return b.AddProperty("PageCount", x => x.PageCount,"总页数")
+                    .AddProperty("PageSize", x => x.PageSize,"分页大小")
+                    .AddProperty("PageIndex", x => x.PageIndex,"页码")
+                    .AddProperty("TotalCount", x => x.TotalCount,"总记录数")
+                    .AddArrayObject("Data", x => x.GetData(),"数据内容");
+
+            }
+
+            //return bulder.AddProperty("PageCount", x => lst.PageCount,"总页数")
+            //    .AddProperty("PageSize", x => lst.PageSize,"分页大小")
+            //    .AddProperty("PageIndex", x => lst.PageIndex,"页码")
+            //    .AddProperty("TotalCount", x => lst.TotalCount,"总记录数")
+            //    .AddArrayObject("Data", x => lst.GetData(),"数据内容");
         }
 
         public static JsonSchemaObjectBuilder<TElement> AddPagedList<TModel, TElement>(this JsonSchemaObjectBuilder<TModel> bulder,

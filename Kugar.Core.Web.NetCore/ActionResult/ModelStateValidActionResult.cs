@@ -38,23 +38,22 @@ namespace Kugar.Core.Web.ActionResult
                         .WritePropertyNameAsync("returnData")
                         ;
 
-                    writer.WriteNull();
+                    await writer.WriteNullAsync();
 
-                    writer.WritePropertyName("error");
+                    await writer.WritePropertyNameAsync("error");
 
-                    writer.WriteStartObject();
+                    await writer.WriteStartObjectAsync();
 
-                        writer.WriteProperty("isValid", context.ModelState.IsValid);
+                        await writer.WritePropertyNameAsync("isValid", context.ModelState.IsValid);
 
-                        writer.WritePropertyName("errors");
+                        await writer.WritePropertyNameAsync("errors");
 
                         var converter = new ModelStateJsonConverter();
 
                         converter.WriteJson(writer, context.ModelState, JsonSerializer.CreateDefault());
 
-                    writer.WriteEndObject();
+                    await writer.WriteEndObjectAsync();
 
-        
 
                 await writer.WriteEndObjectAsync( );
 

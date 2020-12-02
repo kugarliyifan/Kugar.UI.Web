@@ -89,16 +89,19 @@
     }
     ```
 
-10.ModelStateValidActionResult 用于格式化输出ModelState中的错误信息
-    在Action中
+10.ModelStateValidActionResult 用于格式化输出ModelState中的错误信息 
+
     ```
+    //在Action中
     return new ModelStateValidActionResult(ModelState);
     ```
 
-11. TimerHostedService:用于在后台执行一个定时任务,建议在Asp.net Core下使用该类替换TimerEx
-    用于取代TimeEx,在asp.net core的环境下使用,继承该类后,使用 services.AddHostedService&lt;当前类类型&gt;();后,自动在后台启动当前定时任务,并且可以使用到Ioc中注册的类
+11. TimerHostedService:用于在后台执行一个定时任务,建议在Asp.net Core下使用该类替换TimerEx  
+
+    用于取代TimeEx,在asp.net core的环境下使用,继承该类后,
+    使用 services.AddHostedService&lt;定时器处理类&gt;();后,自动在后台启动当前定时任务,并且可以使用到Ioc中注册的类
   
-12. BackgroundTaskQueue 用于后台使用的队列处理类
+12. BackgroundTaskQueue 用于后台使用的队列处理类 
 
     在Start中
     ```

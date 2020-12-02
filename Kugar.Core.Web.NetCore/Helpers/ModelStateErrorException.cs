@@ -114,6 +114,7 @@ namespace Kugar.Core.Web.Helpers
             writer.WriteEndObject();
         }
 
+
         public override ModelStateDictionary ReadJson(JsonReader reader, Type objectType, ModelStateDictionary existingValue,
             bool hasExistingValue, JsonSerializer serializer)
         {
