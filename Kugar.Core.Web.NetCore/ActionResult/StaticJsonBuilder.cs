@@ -236,16 +236,20 @@ namespace Kugar.Core.Web.ActionResult
 
             PipeAction<TModel> s = async (writer, model) =>
              {
-                 await writer.WritePropertyNameAsync( propertyName);
+                 await writer.WritePropertyNameAsync(propertyName);
 
                  var value = valueFactory(model);
 
-                 await writer.WriteValueAsync(value);
+                 if (value != null)
+                 {
+                     await writer.WriteValueAsync(value);
+                 }
+                 else
+                 {
+                     await writer.WriteNullAsync();
+                 }
              };
 
-            if (string.IsNullOrEmpty(desciption))
-            {
-            }
 
             _parentSchemaBulder.AddProperty(propertyName, _parentSchemaBulder._typeToJsonObjectType(typeof(TValue)), desciption,
                 example: example, nullable ?? isNullable(typeof(TValue)));
@@ -300,14 +304,23 @@ namespace Kugar.Core.Web.ActionResult
              {
                  var inputValue = inputValueFunc(model);
 
-                 foreach (var item in funcList)
+                 if (inputValue == null)
                  {
-                     await writer.WritePropertyNameAsync(SchemaBuilder.GetFormatPropertyName(item.properyName));
+                     foreach (var item in funcList)
+                     {
+                         await writer.WritePropertyNameAsync(SchemaBuilder.GetFormatPropertyName(item.properyName));
 
-                     var v = item.valueCaller(inputValue);
+                         var v = item.valueCaller(inputValue);
 
-                     await writer.WriteValueAsync(v);
+                         await writer.WriteValueAsync(v);
+                     }
                  }
+                 else
+                 {
+                     await writer.WriteNullAsync();
+                 }
+
+
              };
 
             ActionList.Add(s);
@@ -353,14 +366,23 @@ namespace Kugar.Core.Web.ActionResult
 
             PipeAction<TModel> s = async (writer, model) =>
             {
-                foreach (var item in funcList)
+                if (model != null)
                 {
-                    await writer.WritePropertyNameAsync(SchemaBuilder.GetFormatPropertyName(item.propertyName));
+                    foreach (var item in funcList)
+                    {
+                        await writer.WritePropertyNameAsync(SchemaBuilder.GetFormatPropertyName(item.propertyName));
 
-                    var v = item.valueCaller(model);
+                        var v = item.valueCaller(model);
 
-                    await writer.WriteValueAsync(v);
+                        await writer.WriteValueAsync(v);
+                    }
                 }
+                else
+                {
+                    await writer.WriteNullAsync();
+                }
+
+
             };
 
             ActionList.Add(s);
@@ -372,6 +394,7 @@ namespace Kugar.Core.Web.ActionResult
         /// 添加单个字段
         /// </summary>
         /// <param name="propertyExpr"></param>
+        /// <param name="desciption"></param>
         /// <returns></returns>
         public JsonSchemaObjectBuilder<TModel> AddProperty(Expression<Func<TModel, object>> propertyExpr, string desciption)
         {
@@ -405,7 +428,16 @@ namespace Kugar.Core.Web.ActionResult
 
                 var v = valueFunc(model);
 
-                await writer.WriteValueAsync(v);
+                if (v != null)
+                {
+                    await writer.WriteValueAsync(v);
+                }
+                else
+                {
+                    await writer.WriteNullAsync();
+                }
+
+
                 //}
             };
 
@@ -440,10 +472,14 @@ namespace Kugar.Core.Web.ActionResult
 
                 await writer.WriteStartArrayAsync();
 
-                foreach (var item in inputValue)
+                if (inputValue!=null && inputValue.HasData())
                 {
-                    await writer.WriteValueAsync(item);
+                    foreach (var item in inputValue)
+                    {
+                        await writer.WriteValueAsync(item);
+                    }
                 }
+                
 
                 await writer.WriteEndArrayAsync();
             };
@@ -546,8 +582,8 @@ namespace Kugar.Core.Web.ActionResult
 
             var c = _parentSchemaBulder.AddObjectProperty(propertyName, desciption);
 
-            var s = new JsonSchemaChildObjectBuilder<TModel,TNewModel>(ActionList,valueFactory,new List<PipeAction<TNewModel>>(), c);
-        
+            var s = new JsonSchemaChildObjectBuilder<TModel, TNewModel>(ActionList, valueFactory, new List<PipeAction<TNewModel>>(), c);
+
             s.Start();
 
             return s;
@@ -561,7 +597,7 @@ namespace Kugar.Core.Web.ActionResult
         /// <returns></returns>
         public JsonSchemaObjectBuilder<TNewModel> FromObject<TNewModel>(Func<TModel, TNewModel> valueFactory)
         {
-            var s = new JsonSchemaChildObjectBuilder<TModel,TNewModel>(ActionList,valueFactory,new List<PipeAction<TNewModel>>(), this.SchemaBuilder);
+            var s = new JsonSchemaChildObjectBuilder<TModel, TNewModel>(ActionList, valueFactory, new List<PipeAction<TNewModel>>(), this.SchemaBuilder);
 
             return s;
         }
@@ -669,7 +705,7 @@ namespace Kugar.Core.Web.ActionResult
                 OnEndCallback?.Invoke(this);
             }
 
-            
+
         }
 
         public virtual void Dispose()
@@ -866,7 +902,7 @@ namespace Kugar.Core.Web.ActionResult
                     var document = new OpenApiDocument();
                     //var settings = new AspNetCoreOpenApiDocumentGeneratorSettings();
                     var schemaResolver = new OpenApiSchemaResolver(document, opt.Value);
-                    var generator =  g?? new JsonSchemaGenerator(opt.Value);
+                    var generator = g ?? new JsonSchemaGenerator(opt.Value);
 
                     Resolver = schemaResolver;
                     Generator = generator;
@@ -875,7 +911,7 @@ namespace Kugar.Core.Web.ActionResult
 
                     var scheme = new JsonSchema();
 
-                    #if NETCOREAPP3_0 || NETCOREAPP3_1
+#if NETCOREAPP3_0 || NETCOREAPP3_1
                     var jsonOpt = (IOptionsSnapshot<MvcNewtonsoftJsonOptions>)HttpContext.Current.RequestServices.GetService(typeof(IOptions<MvcNewtonsoftJsonOptions>));
 
                     jsonResolver = jsonOpt.Value.SerializerSettings.ContractResolver as DefaultContractResolver;
@@ -936,7 +972,7 @@ namespace Kugar.Core.Web.ActionResult
 
         public TModel Model { set; get; }
 
-        private static JsonSerializerSettings _defaultJsonSerializerSettings=new JsonSerializerSettings();
+        private static JsonSerializerSettings _defaultJsonSerializerSettings = new JsonSerializerSettings();
 
         async Task IActionResult.ExecuteResultAsync(ActionContext context)
         {
@@ -969,7 +1005,7 @@ namespace Kugar.Core.Web.ActionResult
                 writer.DateFormatString = opt.DateFormatString;
                 writer.DateFormatHandling = opt.DateFormatHandling;
                 writer.Culture = opt.Culture;
-                
+
 
                 foreach (var action in lst)
                 {
@@ -1020,13 +1056,13 @@ namespace Kugar.Core.Web.ActionResult
         /// <param name="builder"></param>
         /// <param name="resultFactory">可在函数中根据Model中的内容判断是否成功等操作</param>
         /// <returns></returns>
-        public static JsonSchemaObjectBuilder<TModel> AddReturnResult<TModel>(this JsonSchemaObjectBuilder<TModel> builder,Func<TModel,(bool isSuccess,int returnCode,string message)> resultFactory)
+        public static JsonSchemaObjectBuilder<TModel> AddReturnResult<TModel>(this JsonSchemaObjectBuilder<TModel> builder, Func<TModel, (bool isSuccess, int returnCode, string message)> resultFactory)
         {
             builder.FromObject(resultFactory)
-                .AddProperty("IsSuccess", x => x.isSuccess,"操作是否成功")
-                .AddProperty("Message", x => x.message,"返回的提示信息")
-                .AddProperty("ReturnCode", x => x.returnCode,"操作结果代码")
-                .AddProperty("Error", x => x.isSuccess?x.message:"","错误信息");
+                .AddProperty("IsSuccess", x => x.isSuccess, "操作是否成功")
+                .AddProperty("Message", x => x.message, "返回的提示信息")
+                .AddProperty("ReturnCode", x => x.returnCode, "操作结果代码")
+                .AddProperty("Error", x => x.isSuccess ? x.message : "", "错误信息");
 
             return builder.AddObject<TModel>("ReturnData", x => x);
         }
@@ -1038,15 +1074,52 @@ namespace Kugar.Core.Web.ActionResult
         /// <param name="builder"></param>
         /// <param name="resultFactory">可在函数中根据Model中的内容判断是否成功等操作</param>
         /// <returns></returns>
-        public static JsonSchemaObjectBuilder<TModel> AddReturnResult<TModel>(this JsonSchemaObjectBuilder<TModel> builder,Func<TModel,(bool isSuccess,string message)> resultFactory)
+        public static JsonSchemaObjectBuilder<TModel> AddReturnResult<TModel>(this JsonSchemaObjectBuilder<TModel> builder, Func<TModel, (bool isSuccess, string message)> resultFactory)
         {
             builder.FromObject(resultFactory)
-                .AddProperty("IsSuccess", x => x.isSuccess,"操作是否成功")
-                .AddProperty("Message", x => x.message,"返回的提示信息")
-                .AddProperty("ReturnCode", x => 0,"操作结果代码")
-                .AddProperty("Error", x => x.isSuccess?x.message:"","错误信息");
+                .AddProperty("IsSuccess", x => x.isSuccess, "操作是否成功")
+                .AddProperty("Message", x => x.message, "返回的提示信息")
+                .AddProperty("ReturnCode", x => 0, "操作结果代码")
+                .AddProperty("Error", x => x.isSuccess ? x.message : "", "错误信息");
 
             return builder.AddObject<TModel>("ReturnData", x => x);
+        }
+
+        /// <summary>
+        /// 用于需要在在传入model的时候未包含ResultReturn结构,但在返回的时候,需要一个公用的ResultReturn的外框结构的情况下使用
+        /// </summary>
+        /// <typeparam name="TElement"></typeparam>
+        /// <param name="builder"></param>
+        /// <param name="resultFactory">可在函数中根据Model中的内容判断是否成功等操作</param>
+        /// <returns></returns>
+        public static JsonSchemaObjectBuilder<TElement> AddReturnResultArray<TElement>(this JsonSchemaObjectBuilder<IEnumerable<TElement>> builder, Func<IEnumerable<TElement>, (bool isSuccess, int returnCode, string message)> resultFactory)
+
+        {
+            builder.FromObject(resultFactory)
+                .AddProperty("IsSuccess", x => x.isSuccess, "操作是否成功")
+                .AddProperty("Message", x => x.message, "返回的提示信息")
+                .AddProperty("ReturnCode", x => x.returnCode, "操作结果代码")
+                .AddProperty("Error", x => x.isSuccess ? x.message : "", "错误信息");
+
+            return builder.AddArrayObject<TElement>("ReturnData", x => x);
+        }
+
+        /// <summary>
+        /// 用于需要在在传入model的时候未包含ResultReturn结构,但在返回的时候,需要一个公用的ResultReturn的外框结构的情况下使用
+        /// </summary>
+        /// <typeparam name="TElement"></typeparam>
+        /// <param name="builder"></param>
+        /// <param name="resultFactory">可在函数中根据Model中的内容判断是否成功等操作</param>
+        /// <returns></returns>
+        public static JsonSchemaObjectBuilder<TElement> AddReturnResultArray<TElement>(this JsonSchemaObjectBuilder<IEnumerable<TElement>> builder, Func<IEnumerable<TElement>, (bool isSuccess, string message)> resultFactory)
+        {
+            builder.FromObject(resultFactory)
+                .AddProperty("IsSuccess", x => x.isSuccess, "操作是否成功")
+                .AddProperty("Message", x => x.message, "返回的提示信息")
+                .AddProperty("ReturnCode", x => 0, "操作结果代码")
+                .AddProperty("Error", x => x.isSuccess ? x.message : "", "错误信息");
+
+            return builder.AddArrayObject<TElement>("ReturnData", x => x);
         }
 
 
@@ -1056,12 +1129,12 @@ namespace Kugar.Core.Web.ActionResult
         /// <typeparam name="TValue"></typeparam>
         /// <param name="builder"></param>
         /// <returns></returns>
-        public static JsonSchemaObjectBuilder<TValue> AddReturnResult< TValue>(this JsonSchemaObjectBuilder<ResultReturn<TValue>> builder)
+        public static JsonSchemaObjectBuilder<TValue> AddReturnResult<TValue>(this JsonSchemaObjectBuilder<ResultReturn<TValue>> builder)
         {
-            builder.AddProperty("IsSuccess", x => x.IsSuccess,"操作是否成功")
-                .AddProperty("Message", x => x.Message,"返回的提示信息")
-                .AddProperty("ReturnCode", x => x.ReturnCode,"操作结果代码")
-                .AddProperty("Error", x => x.Error?.Message,"错误信息");
+            builder.AddProperty("IsSuccess", x => x.IsSuccess, "操作是否成功")
+                .AddProperty("Message", x => x.Message, "返回的提示信息")
+                .AddProperty("ReturnCode", x => x.ReturnCode, "操作结果代码")
+                .AddProperty("Error", x => x.Error?.Message, "错误信息");
 
             return builder.AddObject<TValue>("ReturnData", x => x.GetResultData());
         }
@@ -1074,12 +1147,12 @@ namespace Kugar.Core.Web.ActionResult
         /// <param name="builder"></param>
         /// <param name="returnDataConverter"></param>
         /// <returns></returns>
-        public static JsonSchemaObjectBuilder<TValue> AddReturnResult<TValue>(this JsonSchemaObjectBuilder<ResultReturn> builder,Func<object,TValue> returnDataConverter)
+        public static JsonSchemaObjectBuilder<TValue> AddReturnResult<TValue>(this JsonSchemaObjectBuilder<ResultReturn> builder, Func<object, TValue> returnDataConverter)
         {
-            builder.AddProperty("IsSuccess", x => x.IsSuccess,"操作是否成功")
-                .AddProperty("Message", x => x.Message,"返回的提示信息")
-                .AddProperty("ReturnCode", x => x.ReturnCode,"操作结果代码")
-                .AddProperty("Error", x => x.Error?.Message,"错误信息");
+            builder.AddProperty("IsSuccess", x => x.IsSuccess, "操作是否成功")
+                .AddProperty("Message", x => x.Message, "返回的提示信息")
+                .AddProperty("ReturnCode", x => x.ReturnCode, "操作结果代码")
+                .AddProperty("Error", x => x.Error?.Message, "错误信息");
 
             return builder.AddObject<TValue>("ReturnData", x => returnDataConverter(x.ReturnData));
         }
@@ -1092,16 +1165,16 @@ namespace Kugar.Core.Web.ActionResult
         /// <param name="builder"></param>
         /// <param name="valueFactory"></param>
         /// <returns></returns>
-        public static JsonSchemaObjectBuilder<TReturnData> AddReturnResult<TModel, TReturnData>(this JsonSchemaObjectBuilder<TModel> builder, Func<TModel,ResultReturn> valueFactory)
+        public static JsonSchemaObjectBuilder<TReturnData> AddReturnResult<TModel, TReturnData>(this JsonSchemaObjectBuilder<TModel> builder, Func<TModel, ResultReturn> valueFactory)
         {
-            using (var b=builder.FromObject(valueFactory))
+            using (var b = builder.FromObject(valueFactory))
             {
-                b.AddProperty("IsSuccess", x => x.IsSuccess,"操作是否成功")
-                    .AddProperty("Message", x => x.Message,"返回的提示信息")
-                    .AddProperty("ReturnCode", x => x.ReturnCode,"操作结果代码")
-                    .AddProperty("Error", x => x.Error?.Message,"错误信息");
-            
-                return b.AddObject("ReturnData", x =>  (TReturnData)x.ReturnData);
+                b.AddProperty("IsSuccess", x => x.IsSuccess, "操作是否成功")
+                    .AddProperty("Message", x => x.Message, "返回的提示信息")
+                    .AddProperty("ReturnCode", x => x.ReturnCode, "操作结果代码")
+                    .AddProperty("Error", x => x.Error?.Message, "错误信息");
+
+                return b.AddObject("ReturnData", x => (TReturnData)x.ReturnData);
             }
 
             //builder.AddProperty("IsSuccess", x => result.IsSuccess, "操作是否成功")
@@ -1120,17 +1193,17 @@ namespace Kugar.Core.Web.ActionResult
         /// <param name="builder"></param>
         /// <param name="valueFactory"></param>
         /// <returns></returns>
-        public static JsonSchemaObjectBuilder<TReturnData> AddReturnResult<TModel, TReturnData>(this JsonSchemaObjectBuilder<TModel> builder,Func<TModel,ResultReturn<TReturnData>> valueFactory)
+        public static JsonSchemaObjectBuilder<TReturnData> AddReturnResult<TModel, TReturnData>(this JsonSchemaObjectBuilder<TModel> builder, Func<TModel, ResultReturn<TReturnData>> valueFactory)
         {
             Debug.Assert(valueFactory != null);
 
-            using (var b=builder.FromObject(valueFactory))
+            using (var b = builder.FromObject(valueFactory))
             {
-                b.AddProperty("IsSuccess", x => x.IsSuccess,"操作是否成功")
-                    .AddProperty("Message", x => x.Message,"返回的提示信息")
-                    .AddProperty("ReturnCode", x => x.ReturnCode,"操作结果代码")
-                    .AddProperty("Error", x => x.Error?.Message,"错误信息");
-            
+                b.AddProperty("IsSuccess", x => x.IsSuccess, "操作是否成功")
+                    .AddProperty("Message", x => x.Message, "返回的提示信息")
+                    .AddProperty("ReturnCode", x => x.ReturnCode, "操作结果代码")
+                    .AddProperty("Error", x => x.Error?.Message, "错误信息");
+
                 return b.AddObject("ReturnData", x => x.GetResultData());
             }
 
@@ -1145,13 +1218,13 @@ namespace Kugar.Core.Web.ActionResult
         public static JsonSchemaObjectBuilder<TElement> AddReturnResultArray<TElement>(
             this JsonSchemaObjectBuilder<ResultReturn<IEnumerable<TElement>>> builder)
         {
-            using (var b=builder.FromObject(x=>x))
+            using (var b = builder.FromObject(x => x))
             {
-                b.AddProperty("IsSuccess", x => x.IsSuccess,"操作是否成功")
-                    .AddProperty("Message", x => x.Message,"返回的提示信息")
-                    .AddProperty("ReturnCode", x => x.ReturnCode,"操作结果代码")
-                    .AddProperty("Error", x => x.Error?.Message,"错误信息");
-            
+                b.AddProperty("IsSuccess", x => x.IsSuccess, "操作是否成功")
+                    .AddProperty("Message", x => x.Message, "返回的提示信息")
+                    .AddProperty("ReturnCode", x => x.ReturnCode, "操作结果代码")
+                    .AddProperty("Error", x => x.Error?.Message, "错误信息");
+
                 return b.AddArrayObject("ReturnData", x => x.GetResultData());
             }
 
@@ -1173,15 +1246,15 @@ namespace Kugar.Core.Web.ActionResult
         /// <returns></returns>
         public static JsonSchemaObjectBuilder<TElement> AddReturnResultArray<TModel, TElement>(
             this JsonSchemaObjectBuilder<TModel> builder,
-            Func<TModel,IResultReturn<IEnumerable<TElement>>> valueFactory) where TModel : IResultReturn<IEnumerable<TElement>>
+            Func<TModel, IResultReturn<IEnumerable<TElement>>> valueFactory) where TModel : IResultReturn<IEnumerable<TElement>>
         {
-            using (var b=builder.FromObject(valueFactory))
+            using (var b = builder.FromObject(valueFactory))
             {
-                b.AddProperty("IsSuccess", x => x.IsSuccess,"操作是否成功")
-                    .AddProperty("Message", x => x.Message,"返回的提示信息")
-                    .AddProperty("ReturnCode", x => x.ReturnCode,"操作结果代码")
-                    .AddProperty("Error", x => x.Error?.Message,"错误信息");
-            
+                b.AddProperty("IsSuccess", x => x.IsSuccess, "操作是否成功")
+                    .AddProperty("Message", x => x.Message, "返回的提示信息")
+                    .AddProperty("ReturnCode", x => x.ReturnCode, "操作结果代码")
+                    .AddProperty("Error", x => x.Error?.Message, "错误信息");
+
                 return b.AddArrayObject("ReturnData", x => x.GetResultData());
             }
 
@@ -1199,15 +1272,15 @@ namespace Kugar.Core.Web.ActionResult
         /// <typeparam name="TElement"></typeparam>
         /// <param name="builder"></param>
         /// <returns></returns>
-        public static JsonSchemaObjectBuilder<TElement> AddPagedList< TElement>(this JsonSchemaObjectBuilder<IPagedList<TElement>> builder)  
+        public static JsonSchemaObjectBuilder<TElement> AddPagedList<TElement>(this JsonSchemaObjectBuilder<IPagedList<TElement>> builder)
         {
-            using (var b=builder.FromObject(x=>x))
+            using (var b = builder.FromObject(x => x))
             {
-                return b.AddProperty("PageCount", x => x.PageCount,"总页数")
-                    .AddProperty("PageSize", x => x.PageSize,"分页大小")
-                    .AddProperty("PageIndex", x => x.PageIndex,"页码")
-                    .AddProperty("TotalCount", x => x.TotalCount,"总记录数")
-                    .AddArrayObject("Data", x => x.GetData(),"数据内容");
+                return b.AddProperty("PageCount", x => x.PageCount, "总页数")
+                    .AddProperty("PageSize", x => x.PageSize, "分页大小")
+                    .AddProperty("PageIndex", x => x.PageIndex, "页码")
+                    .AddProperty("TotalCount", x => x.TotalCount, "总记录数")
+                    .AddArrayObject("Data", x => x.GetData(), "数据内容");
 
             }
 
@@ -1224,15 +1297,15 @@ namespace Kugar.Core.Web.ActionResult
         /// <typeparam name="TElement"></typeparam>
         /// <param name="builder"></param>
         /// <returns></returns>
-        public static JsonSchemaObjectBuilder<TElement> AddPagedList< TElement>(this JsonSchemaObjectBuilder<VM_PagedList<TElement>> builder)  
+        public static JsonSchemaObjectBuilder<TElement> AddPagedList<TElement>(this JsonSchemaObjectBuilder<VM_PagedList<TElement>> builder)
         {
-            using (var b=builder.FromObject(x=>x))
+            using (var b = builder.FromObject(x => x))
             {
-                return b.AddProperty("PageCount", x => x.PageCount,"总页数")
-                    .AddProperty("PageSize", x => x.PageSize,"分页大小")
-                    .AddProperty("PageIndex", x => x.PageIndex,"页码")
-                    .AddProperty("TotalCount", x => x.TotalCount,"总记录数")
-                    .AddArrayObject("Data", x => x.GetData(),"数据内容");
+                return b.AddProperty("PageCount", x => x.PageCount, "总页数")
+                    .AddProperty("PageSize", x => x.PageSize, "分页大小")
+                    .AddProperty("PageIndex", x => x.PageIndex, "页码")
+                    .AddProperty("TotalCount", x => x.TotalCount, "总记录数")
+                    .AddArrayObject("Data", x => x.GetData(), "数据内容");
 
             }
 
@@ -1246,11 +1319,11 @@ namespace Kugar.Core.Web.ActionResult
         public static JsonSchemaObjectBuilder<TElement> AddPagedList<TModel, TElement>(this JsonSchemaObjectBuilder<TModel> bulder,
            [NotNull] Func<TModel, IPagedList<TElement>> valueFactory)
         {
-            return bulder.AddProperty("PageCount", x =>valueFactory(x).PageCount,"总页数")
-                .AddProperty("PageSize", x => valueFactory(x).PageSize,"分页大小")
-                .AddProperty("PageIndex", x => valueFactory(x).PageIndex,"页码")
-                .AddProperty("TotalCount", x => valueFactory(x).TotalCount,"总记录数")
-                .AddArrayObject("Data", x => valueFactory(x).GetData(),"数据内容");
+            return bulder.AddProperty("PageCount", x => valueFactory(x).PageCount, "总页数")
+                .AddProperty("PageSize", x => valueFactory(x).PageSize, "分页大小")
+                .AddProperty("PageIndex", x => valueFactory(x).PageIndex, "页码")
+                .AddProperty("TotalCount", x => valueFactory(x).TotalCount, "总记录数")
+                .AddArrayObject("Data", x => valueFactory(x).GetData(), "数据内容");
         }
 
 
