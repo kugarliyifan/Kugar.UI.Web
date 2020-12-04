@@ -112,6 +112,8 @@
     ```
     public async Task<IActionResult> xx([FromService]BackgroundTaskQueue queue)
     {
-        queue.QueueBackgroundWorkItem()  //加入一个待处理的任务
+        queue.QueueBackgroundWorkItem(任务类)  //加入一个待处理的任务
     }
     ```
+
+13. ScheduledTaskService 用于简单情况下通过Cron表达式设置计划执行的周期,该类无法运行时修改Cron,并且Enabled属性修改为false后,任务将停止,并且无法重新开启,注册方式参考TimerHostedService

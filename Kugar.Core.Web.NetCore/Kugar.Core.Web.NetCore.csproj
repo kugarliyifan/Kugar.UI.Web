@@ -4,7 +4,7 @@
     <TargetFrameworks>netcoreapp2.1;netcoreapp3.0;netcoreapp3.1;</TargetFrameworks>
     <RootNamespace>Kugar.Core.Web</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.0.142</Version>
+    <Version>1.0.143</Version>
     <Authors>Kugar</Authors>
     <Product>Kugar.Core.Web</Product>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
@@ -13,7 +13,8 @@
     <PackageProjectUrl>https://github.com/kugarliyifan/Kugar.UI.Web</PackageProjectUrl>
     <PackageReleaseNotes>1.优化TimerHostedService
 2.优化JsonSchemaObjectBuilder.AddPagedList
-3.修复AddReturnResult和AddPagedList的bug</PackageReleaseNotes>
+3.修复AddReturnResult和AddPagedList的bug
+4.新增ScheduledTaskService类</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/kugarliyifan/Kugar.UI.Web</RepositoryUrl>
   </PropertyGroup>
 
@@ -62,6 +63,7 @@
   <ItemGroup>
     <PackageReference Include="Kugar.Core.NetCore" Version="1.2.127" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="2.2.0" />
+    <PackageReference Include="ncrontab" Version="3.3.1" />
 
   </ItemGroup>
 
