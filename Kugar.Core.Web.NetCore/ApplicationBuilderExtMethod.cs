@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Kugar.Core.ExtMethod;
-using Kugar.Core.Log;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Logging;
 
 namespace Kugar.Core.Web
 {
@@ -103,71 +104,46 @@ namespace Kugar.Core.Web
             app.UseStaticFiles(opt);
         }
 
+        /// <summary>
+        /// 简单的使用Logger记录request的信息,不建议在生产环境中使用,生产环境使用请使用HttpReports之类的监控,使用该功能时,请检查是否有注入ILogger,未注入的,无法写入日志
+        /// </summary>
+        /// <param name="app"></param>
+        /// <param name="logFilter">过滤一条连接是否记录日志,返回true,则记录,false不记录</param>
         public static void UseRequestLog(this IApplicationBuilder app,Func<Microsoft.AspNetCore.Http.HttpContext,bool> logFilter=null)
         {
             app.Use(async (context, next) =>
             {
-
-                context.Request.EnableBuffering();
                 Exception error = null;
-
-                //var headers = context.Request.Headers.Select(x => $"{x.Key}={x.Value}").JoinToString('\n');
-
 
                 var data = "";
 
                 var needForLog = logFilter?.Invoke(context)??true;
 
-
-                //if (context.Request.RouteValues.TryGetValue("action", out var tmp))
-                //{
-                //    var action = tmp.ToStringEx();
-
-                //    if (action.CompareTo("GetUserUnreadQty", true) || action.CompareTo("UserCenter", true))
-                //    {
-                //        needForLog = false;
-                //    }
-                //}
-
-                //if (needForLog)
-                //{
-                //    if (context.Request.ContentLength < 20000)
-                //    {
-                //        //data = await context.Request.GetBodyString();
-                //        context.Request.Body.Position = 0L;
-
-                //        data = Encoding.UTF8.GetString(await context.Request.Body.ReadAllBytesAsync());
-                //        context.Request.Body.Position = 0L;
-
-                //    }
-                //    else
-                //    {
-                //        data = "内容超大,忽略记录";
-                //    }
-                //}
-
-
+                if (needForLog)
+                {
+                    context.Request.EnableBuffering();
+                }
+                
                 try
                 {
                     await next();
                 }
                 catch (Exception e)
                 {
-                    //context.Request.EnableBuffering();
-
-
-
-                    //Console.WriteLine(e);
                     error = e;
-                    LoggerManager.Default.Error($"接收到请求:url:{context.Request.GetDisplayUrl()} \n body:{data} \n ", e);
+                    //logger.Log(LogLevel.Error,e,$"接收到请求:url:{context.Request.GetDisplayUrl()} \n body:{data} \n ", e);
                     throw;
                 }
                 finally
                 {
-                    if (error != null)
+                    if (needForLog)
                     {
-                        if (!needForLog)
+                        var logger = (ILogger) context.RequestServices.GetService(typeof(ILogger));
+
+                        if (logger!=null)
                         {
+                            var headers = context.Request.Headers.Select(x => $"{x.Key}={x.Value}").JoinToString('\n');
+
                             if (context.Request.ContentLength < 20000)
                             {
                                 //data = await context.Request.GetBodyString();
@@ -180,15 +156,19 @@ namespace Kugar.Core.Web
                             {
                                 data = "内容超大,忽略记录";
                             }
+
+
+                            if (error==null)
+                            {
+                                logger.Log(LogLevel.Error,error, $"接收到请求:url:{context.Request.GetDisplayUrl()} \n body:{data} \n header: {headers}");
+                            }
+                            else
+                            {
+                                logger.Log(LogLevel.Error, $"接收到请求:url:{context.Request.GetDisplayUrl()} \n body:{data} \n header: {headers}", error);
+
+                            }
                         }
-
-                        LoggerManager.Default.Error($"接收到请求:url:{context.Request.GetDisplayUrl()} \n body:{data} \n ", error);
                     }
-                    else if (needForLog)
-                    {
-                        LoggerManager.Default.Debug($"接收到请求:url:{context.Request.GetDisplayUrl()} \n body:{data} \n ");
-                    }
-
                 }
 
             });

@@ -117,3 +117,10 @@
     ```
 
 13. ScheduledTaskService 用于简单情况下通过Cron表达式设置计划执行的周期,该类无法运行时修改Cron,并且Enabled属性修改为false后,任务将停止,并且无法重新开启,注册方式参考TimerHostedService
+
+14. ActionNamesAttribute 允许一个Action可以有多个ActionName
+15. UseRequestLog 用于开发/测试环境下,记录每个请求的数据
+    在Start中
+    ```
+    app.UseRequestLog()
+    ```

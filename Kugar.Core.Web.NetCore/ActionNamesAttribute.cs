@@ -16,37 +16,42 @@ using Microsoft.AspNetCore.Routing;
 
 namespace Kugar.Core.Web
 {
-
+    /// <summary>
+    /// 允许一个Action有多个ActionName
+    /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
     public class ActionNamesAttribute : ActionMethodSelectorAttribute
     {
+        private HashSet<string> _names=new HashSet<string>(StringComparer.CurrentCultureIgnoreCase); 
+
         public ActionNamesAttribute(params string[] names)
         {
             if (!names.HasData())
             {
-                throw new ArgumentException("ActionNames cannot be empty or null", "names");
-            }
-            this.Names = new HashSet<string>(StringComparer.CurrentCultureIgnoreCase);
+                throw new ArgumentOutOfRangeException(nameof(names));
+                
+            } 
 
             foreach (string name in names)
             {
                 if (string.IsNullOrEmpty(name))
                 {
-                    throw new ArgumentException("ActionNames cannot be empty or null", "names");
+                    throw new ArgumentNullException(nameof(names));
+                    
                 }
 
-                this.Names.Add(name);
+                _names.Add(name);
             }
         }
 
-        private HashSet<string> Names { get; }
+        //private HashSet<string> Names { get; }
 
 
         public override bool IsValidForRequest(RouteContext routeContext, ActionDescriptor action)
         {
             var actionName = routeContext.RouteData.DataTokens.TryGetValue("action", "");
             
-            return this.Names.Contains(actionName);
+            return _names.Contains(actionName);
         }
     }
 }
