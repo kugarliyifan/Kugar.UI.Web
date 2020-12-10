@@ -164,14 +164,15 @@ namespace Kugar.Core.Web.Core3.Demo
                             NamingStrategy = new CamelCaseNamingStrategy(true, true)
                         };
                 }).EnableJsonValueModelBinder()
-                .AddDataAnnotationsLocalization(opt => {
-                    opt.DataAnnotationLocalizerProvider = (type, factory) =>
-                    {
-                        var loc = factory.Create(typeof(DataAnnotationsResources)).WithCulture(Thread.CurrentThread.CurrentUICulture);
-                        var s1 = loc["StringLengthAttribute_ValidationError"];
-                        return loc;
-                    };
-                });
+                //.AddDataAnnotationsLocalization(opt => {
+                //    opt.DataAnnotationLocalizerProvider = (type, factory) =>
+                //    {
+                //        var loc = factory.Create(typeof(DataAnnotationsResources)).WithCulture(Thread.CurrentThread.CurrentUICulture);
+                //        var s1 = loc["StringLengthAttribute_ValidationError"];
+                //        return loc;
+                //    };
+                //})
+                ;
             ;
 
 

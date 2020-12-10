@@ -9,6 +9,7 @@ using System.Dynamic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Resources;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -26,6 +27,9 @@ using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -246,6 +250,13 @@ namespace Kugar.Core.Web
     internal abstract class JsonValueModelBinderBase : IModelBinder
     {
         private bool _isCaseSensitive = true;
+        private static ResourceManagerStringLocalizerFactory _defaultLocalizerFactory = null;
+
+        static JsonValueModelBinderBase()
+        {
+            _defaultLocalizerFactory=new ResourceManagerStringLocalizerFactory(new OptionsWrapper<LocalizationOptions>(new LocalizationOptions()),new NullLoggerFactory());
+
+        }
 
         public JsonValueModelBinderBase(bool isCaseSensitive)
         {
@@ -287,15 +298,26 @@ namespace Kugar.Core.Web
                         {
                             if (loc==null)
                             {
-                                loc = f.Create(typeof(DataAnnotationsResources))
-                                    .WithCulture(culture: Thread.CurrentThread.CurrentUICulture);
+                                if (f!=null)
+                                {
+                                    loc = f.Create(typeof(DataAnnotationsResources))
+                                        .WithCulture(culture: Thread.CurrentThread.CurrentUICulture);
+                                }
+                                else
+                                {
+                                    loc=_defaultLocalizerFactory.Create(typeof(DataAnnotationsResources));
+
+                                }
                             }
 
-                            var v = loc[propertyKey];
-
-                            if (!string.IsNullOrEmpty(v))
+                            if (loc!=null)
                             {
-                                validator.ErrorMessage = v;
+                                var v = loc[propertyKey];
+
+                                if (!string.IsNullOrEmpty(v))
+                                {
+                                    validator.ErrorMessage = v;
+                                }
                             }
                         }
 
@@ -326,12 +348,12 @@ namespace Kugar.Core.Web
 
                 if (json != null && json.TryGetValue(bindingContext.FieldName, _isCaseSensitive ? StringComparison.CurrentCulture : StringComparison.InvariantCultureIgnoreCase, out value))
                 {
-
+                    return true;
                 }
                 else
                 {
                     value = null;
-                    return false;
+                    return true;
                 }
                 //if (_isCaseSensitive)
                 //{
@@ -372,7 +394,7 @@ namespace Kugar.Core.Web
 
         public override async Task BindModelAsync(ModelBindingContext bindingContext)
         {
-            if (TryGetJsonValue(bindingContext, bindingContext.FieldName, out var jvalue) && jvalue != null)
+            if (TryGetJsonValue(bindingContext, bindingContext.FieldName, out var jvalue))
             {
                 var value = jvalue?.ToObject(bindingContext.ModelType);
 
@@ -652,6 +674,7 @@ namespace Kugar.Core.Web
         }
     }
 
+    [AttributeUsage(AttributeTargets.Class|AttributeTargets.Method,AllowMultiple = false,Inherited = true)]
     public class FromBodyJsonAttribute : Attribute
     {
         /// <summary>

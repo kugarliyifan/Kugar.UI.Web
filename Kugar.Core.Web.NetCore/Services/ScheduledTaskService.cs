@@ -39,7 +39,7 @@ namespace Kugar.Core.Web.Services
                 throw;
             }
 
-            while (Enabled && _crontab != null)
+            while (Enabled && _crontab != null && !stoppingToken.IsCancellationRequested)
             {
 
                 var nextDt = _crontab.GetNextOccurrence(DateTime.Now.AddSeconds(2));
@@ -52,15 +52,15 @@ namespace Kugar.Core.Web.Services
 
                 try
                 {
-                    logger.Log(LogLevel.Trace, $"启动计划任务:{this.GetType().Name}");
+                    logger?.Log(LogLevel.Trace, $"启动计划任务:{this.GetType().Name}");
 
                     await Run(_provider, stoppingToken);
 
-                    logger.Log(LogLevel.Trace, $"完成计划任务:{this.GetType().Name}");
+                    logger?.Log(LogLevel.Trace, $"完成计划任务:{this.GetType().Name}");
                 }
                 catch (Exception e)
                 {
-                    logger.Log(LogLevel.Error, e, $"计划任务执行异常:{e.Message}");
+                    logger?.Log(LogLevel.Error, e, $"计划任务执行异常:{e.Message}");
                 }
             }
         }

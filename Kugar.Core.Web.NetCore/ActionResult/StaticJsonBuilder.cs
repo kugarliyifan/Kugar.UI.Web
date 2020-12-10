@@ -597,7 +597,7 @@ namespace Kugar.Core.Web.ActionResult
         /// <returns></returns>
         public JsonSchemaObjectBuilder<TNewModel> FromObject<TNewModel>(Func<TModel, TNewModel> valueFactory)
         {
-            var s = new JsonSchemaChildObjectBuilder<TModel, TNewModel>(ActionList, valueFactory, new List<PipeAction<TNewModel>>(), this.SchemaBuilder);
+            var s = new JsonSchemaChildObjectBuilder<TModel, TNewModel>(ActionList, valueFactory, new List<PipeAction<TNewModel>>(), this.SchemaBuilder,false);
 
             return s;
         }
@@ -710,7 +710,7 @@ namespace Kugar.Core.Web.ActionResult
 
         public virtual void Dispose()
         {
-            End();
+            this.End();
         }
 
         public event Action<JsonSchemaObjectBuilder<TModel>> OnEndCallback;
@@ -738,11 +738,23 @@ namespace Kugar.Core.Web.ActionResult
     {
         private List<PipeAction<TModel>> _parentPipe = null;
         private Func<TModel, TChildModel> _valueFactory = null;
+        private bool _isNewObj = true;
 
-        public JsonSchemaChildObjectBuilder(List<PipeAction<TModel>> parentPipe, Func<TModel, TChildModel> valueFactory, List<PipeAction<TChildModel>> lst, JsonObjectSchemeBuilder schemaBuilder) : base(lst, schemaBuilder)
+        public JsonSchemaChildObjectBuilder(List<PipeAction<TModel>> parentPipe, Func<TModel, TChildModel> valueFactory, List<PipeAction<TChildModel>> lst, JsonObjectSchemeBuilder schemaBuilder,bool isNewObj=true) : base(lst, schemaBuilder)
         {
             _parentPipe = parentPipe;
             _valueFactory = valueFactory;
+            _isNewObj = isNewObj;
+        }
+
+        public override JsonSchemaObjectBuilder<TChildModel> Start()
+        {
+            if (_isNewObj)
+            {
+                return base.Start();    
+            }
+
+            return this;
         }
 
         public override void End()
@@ -777,6 +789,11 @@ namespace Kugar.Core.Web.ActionResult
             });
 
             base.End();
+        }
+
+        public override void Dispose()
+        {
+            this.End();
         }
     }
 
@@ -1062,7 +1079,8 @@ namespace Kugar.Core.Web.ActionResult
                 .AddProperty("IsSuccess", x => x.isSuccess, "操作是否成功")
                 .AddProperty("Message", x => x.message, "返回的提示信息")
                 .AddProperty("ReturnCode", x => x.returnCode, "操作结果代码")
-                .AddProperty("Error", x => x.isSuccess ? x.message : "", "错误信息");
+                .AddProperty("Error", x => x.isSuccess ? x.message : "", "错误信息")
+                .End();
 
             return builder.AddObject<TModel>("ReturnData", x => x);
         }
@@ -1080,7 +1098,7 @@ namespace Kugar.Core.Web.ActionResult
                 .AddProperty("IsSuccess", x => x.isSuccess, "操作是否成功")
                 .AddProperty("Message", x => x.message, "返回的提示信息")
                 .AddProperty("ReturnCode", x => 0, "操作结果代码")
-                .AddProperty("Error", x => x.isSuccess ? x.message : "", "错误信息");
+                .AddProperty("Error", x => x.isSuccess ? x.message : "", "错误信息").End();
 
             return builder.AddObject<TModel>("ReturnData", x => x);
         }
@@ -1099,7 +1117,7 @@ namespace Kugar.Core.Web.ActionResult
                 .AddProperty("IsSuccess", x => x.isSuccess, "操作是否成功")
                 .AddProperty("Message", x => x.message, "返回的提示信息")
                 .AddProperty("ReturnCode", x => x.returnCode, "操作结果代码")
-                .AddProperty("Error", x => x.isSuccess ? x.message : "", "错误信息");
+                .AddProperty("Error", x => x.isSuccess ? x.message : "", "错误信息").End();
 
             return builder.AddArrayObject<TElement>("ReturnData", x => x);
         }
@@ -1117,7 +1135,8 @@ namespace Kugar.Core.Web.ActionResult
                 .AddProperty("IsSuccess", x => x.isSuccess, "操作是否成功")
                 .AddProperty("Message", x => x.message, "返回的提示信息")
                 .AddProperty("ReturnCode", x => 0, "操作结果代码")
-                .AddProperty("Error", x => x.isSuccess ? x.message : "", "错误信息");
+                .AddProperty("Error", x => x.isSuccess ? x.message : "", "错误信息")
+                .End();
 
             return builder.AddArrayObject<TElement>("ReturnData", x => x);
         }
@@ -1134,7 +1153,7 @@ namespace Kugar.Core.Web.ActionResult
             builder.AddProperty("IsSuccess", x => x.IsSuccess, "操作是否成功")
                 .AddProperty("Message", x => x.Message, "返回的提示信息")
                 .AddProperty("ReturnCode", x => x.ReturnCode, "操作结果代码")
-                .AddProperty("Error", x => x.Error?.Message, "错误信息");
+                .AddProperty("Error", x => x.Error?.Message, "错误信息").End();
 
             return builder.AddObject<TValue>("ReturnData", x => x.GetResultData());
         }
@@ -1152,7 +1171,7 @@ namespace Kugar.Core.Web.ActionResult
             builder.AddProperty("IsSuccess", x => x.IsSuccess, "操作是否成功")
                 .AddProperty("Message", x => x.Message, "返回的提示信息")
                 .AddProperty("ReturnCode", x => x.ReturnCode, "操作结果代码")
-                .AddProperty("Error", x => x.Error?.Message, "错误信息");
+                .AddProperty("Error", x => x.Error?.Message, "错误信息").End();
 
             return builder.AddObject<TValue>("ReturnData", x => returnDataConverter(x.ReturnData));
         }
@@ -1172,7 +1191,7 @@ namespace Kugar.Core.Web.ActionResult
                 b.AddProperty("IsSuccess", x => x.IsSuccess, "操作是否成功")
                     .AddProperty("Message", x => x.Message, "返回的提示信息")
                     .AddProperty("ReturnCode", x => x.ReturnCode, "操作结果代码")
-                    .AddProperty("Error", x => x.Error?.Message, "错误信息");
+                    .AddProperty("Error", x => x.Error?.Message, "错误信息").End();
 
                 return b.AddObject("ReturnData", x => (TReturnData)x.ReturnData);
             }
@@ -1202,7 +1221,7 @@ namespace Kugar.Core.Web.ActionResult
                 b.AddProperty("IsSuccess", x => x.IsSuccess, "操作是否成功")
                     .AddProperty("Message", x => x.Message, "返回的提示信息")
                     .AddProperty("ReturnCode", x => x.ReturnCode, "操作结果代码")
-                    .AddProperty("Error", x => x.Error?.Message, "错误信息");
+                    .AddProperty("Error", x => x.Error?.Message, "错误信息").End();
 
                 return b.AddObject("ReturnData", x => x.GetResultData());
             }
@@ -1223,7 +1242,7 @@ namespace Kugar.Core.Web.ActionResult
                 b.AddProperty("IsSuccess", x => x.IsSuccess, "操作是否成功")
                     .AddProperty("Message", x => x.Message, "返回的提示信息")
                     .AddProperty("ReturnCode", x => x.ReturnCode, "操作结果代码")
-                    .AddProperty("Error", x => x.Error?.Message, "错误信息");
+                    .AddProperty("Error", x => x.Error?.Message, "错误信息").End();
 
                 return b.AddArrayObject("ReturnData", x => x.GetResultData());
             }
@@ -1253,7 +1272,7 @@ namespace Kugar.Core.Web.ActionResult
                 b.AddProperty("IsSuccess", x => x.IsSuccess, "操作是否成功")
                     .AddProperty("Message", x => x.Message, "返回的提示信息")
                     .AddProperty("ReturnCode", x => x.ReturnCode, "操作结果代码")
-                    .AddProperty("Error", x => x.Error?.Message, "错误信息");
+                    .AddProperty("Error", x => x.Error?.Message, "错误信息").End();
 
                 return b.AddArrayObject("ReturnData", x => x.GetResultData());
             }

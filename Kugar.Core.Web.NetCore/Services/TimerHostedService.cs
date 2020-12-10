@@ -26,18 +26,22 @@ namespace Kugar.Core.Web.Services
                 {
                     await Task.Delay(Internal, stoppingToken);
 
-                    using (var scope = _provider.CreateScope())
+                    if (!stoppingToken.IsCancellationRequested)
                     {
-                        try
+                        using (var scope = _provider.CreateScope())
                         {
-                            await Run(scope.ServiceProvider, stoppingToken);
-                        }
-                        catch (Exception e)
-                        {
+                            try
+                            {
+                                await Run(scope.ServiceProvider, stoppingToken);
+                            }
+                            catch (Exception e)
+                            {
 
+                            }
                         }
-
                     }
+
+                    
                 }
             }
 

@@ -4,17 +4,16 @@
     <TargetFrameworks>netcoreapp2.1;netcoreapp3.0;netcoreapp3.1;</TargetFrameworks>
     <RootNamespace>Kugar.Core.Web</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.0.143</Version>
+    <Version>1.0.158</Version>
     <Authors>Kugar</Authors>
     <Product>Kugar.Core.Web</Product>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
     <RazorGenerateComponentDesignTime>true</RazorGenerateComponentDesignTime>
     <Description>一个通用的Web工具类</Description>
     <PackageProjectUrl>https://github.com/kugarliyifan/Kugar.UI.Web</PackageProjectUrl>
-    <PackageReleaseNotes>1.优化TimerHostedService
-2.优化JsonSchemaObjectBuilder.AddPagedList
-3.修复AddReturnResult和AddPagedList的bug
-4.新增ScheduledTaskService类</PackageReleaseNotes>
+    <PackageReleaseNotes>1.修复AddWebJWT使用header返回token的问题
+2.JsonValueModelBinde使用DataAnnotation校验的时候,默认返回中文错误提示
+3.优化SimpleScheduledTaskService和TimerHostedService使用stoppingToken</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/kugarliyifan/Kugar.UI.Web</RepositoryUrl>
   </PropertyGroup>
 

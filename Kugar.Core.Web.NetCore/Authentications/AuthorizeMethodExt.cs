@@ -78,7 +78,7 @@ namespace Kugar.Core.Web.Authentications
                         context.Token = v;
                     }
 
-                    if (!string.IsNullOrEmpty(context.Token) && context.Request.Headers.ContainsKey("Authorization"))
+                    if (string.IsNullOrEmpty(context.Token) && context.Request.Headers.ContainsKey("Authorization"))
                     {
                         context.Token = context.Request.Headers.TryGetValue("Authorization").FirstOrDefault();
                     }
@@ -116,11 +116,11 @@ namespace Kugar.Core.Web.Authentications
                     if (tmpOpt.LoginService != null)
                     {
 #if NETCOREAPP2_1
-                        var userName = context.Principal.FindFirst("UserID")?.Value.ToStringEx();
+                        var userName = context.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value.ToStringEx();
                         var pw = context.Principal.FindFirst("k")?.Value.ToStringEx();
 #endif
 #if NETCOREAPP3_0 || NETCOREAPP3_1
-                        var userName = context.Principal.FindFirstValue(ClaimTypes.Name);
+                        var userName = context.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
                         var pw = context.Principal.FindFirstValue("k").DesDecrypt(tmpOpt.TokenEncKey.Left(8));
 #endif
                         userName = userName.Trim();
