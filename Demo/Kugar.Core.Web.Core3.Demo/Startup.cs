@@ -176,14 +176,14 @@ namespace Kugar.Core.Web.Core3.Demo
             ;
 
 
-            services.Configure<FileIOOption>(opt =>
-            {
-                opt.TypeMappings=new Dictionary<string, string>()
-                {
-                    ["1"]="/uploads/adv"
-                };
-                opt.IncludeHost = true;
-            });
+            //services.Configure<FileIOOption>(opt =>
+            //{
+            //    opt.TypeMappings=new Dictionary<string, string>()
+            //    {
+            //        ["1"]="/uploads/adv"
+            //    };
+            //    opt.IncludeHost = true;
+            //});
         }
 
         private JsonObjectType netTypeToJsonObjectType(Type type)

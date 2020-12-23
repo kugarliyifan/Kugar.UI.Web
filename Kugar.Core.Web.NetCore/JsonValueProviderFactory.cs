@@ -340,6 +340,60 @@ namespace Kugar.Core.Web
             return true;
         }
 
+        private static ConcurrentDictionary<Type, JToken> _defaultTypeJToken = new ConcurrentDictionary<Type, JToken>();
+        private JToken getTypeDefaultJToken(Type type)
+        {
+            return _defaultTypeJToken.GetOrAdd(type, x =>
+            {
+                if (x == typeof(string))
+                {
+                    return string.Empty;
+                }
+                else if (x == typeof(int))
+                {
+                    return default(int);
+                }
+                else if (x == typeof(long))
+                {
+                    return default(long);
+                }
+                else if (x == typeof(decimal))
+                {
+                    return default(decimal);
+                }
+                else if (x == typeof(short))
+                {
+                    return default(short);
+                }
+                else if (x == typeof(float))
+                {
+                    return default(float);
+                }
+                else if (x == typeof(double))
+                {
+                    return default(double);
+                }
+                else if (x.IsEnum)
+                {
+                    var attribute = x.GetCustomAttribute<DefaultValueAttribute>(inherit: false);
+                    if (attribute != null)
+                        return JToken.FromObject(attribute.Value);
+
+                    var innerType = x.GetEnumUnderlyingType();
+                    var zero = Activator.CreateInstance(innerType);
+                    if (x.IsEnumDefined(zero))
+                        return JToken.FromObject(zero);
+
+                    var values = x.GetEnumValues();
+                    return JToken.FromObject(values.GetValue(0));
+                }
+                else  
+                {
+                    return null;
+                }
+            });
+        }
+
         protected bool TryGetJsonValue(ModelBindingContext bindingContext, string fieldName, out JToken value)
         {
             if (bindingContext.HttpContext.Items.TryGetValue("__jsonData", out var item))
@@ -352,8 +406,8 @@ namespace Kugar.Core.Web
                 }
                 else
                 {
-                    value = null;
-                    return true;
+                    value = getTypeDefaultJToken(bindingContext.ModelType);
+                    return false;
                 }
                 //if (_isCaseSensitive)
                 //{
@@ -407,6 +461,10 @@ namespace Kugar.Core.Web
             }
             else
             {
+                if (!Validate(bindingContext.ModelType.GetDefaultValue(), bindingContext))
+                {
+                    bindingContext.ModelState.SetModelValue(bindingContext.FieldName, bindingContext.ModelType.GetDefaultValue(), bindingContext.ModelType.GetDefaultValue().ToStringEx());
+                }
                 bindingContext.Result = ModelBindingResult.Failed();
             }
 

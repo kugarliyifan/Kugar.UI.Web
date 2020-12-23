@@ -37,9 +37,7 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
         /// <returns></returns>
         [FromBodyJson,HttpPost]
         public async Task<IActionResult> TestValid(
-             [Display(Name = "ssssss"),StringLength(100,MinimumLength = 6),Required] string str1,
-             [Range(20,50), Required] int int3,
-             (string key1,string key2) tupleTest
+            int groupID,string formID,string prop1,string prop2,int addressID,int qty, [Required]string shareKey,int advPlatformID=-1,bool useCoin=true,string comment=""
         )
         {
             //this.BuildJWtToken()

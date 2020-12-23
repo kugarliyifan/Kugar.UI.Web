@@ -142,7 +142,7 @@ namespace Kugar.Core.Web
 
                         if (logger!=null)
                         {
-                            var headers = context.Request.Headers.Select(x => $"{x.Key}={x.Value}").JoinToString('\n');
+                            var headers = context.Request.Headers?.Select(x => $"{x.Key}={x.Value.ToStringEx()}").JoinToString('\n');
 
                             if (context.Request.ContentLength < 20000)
                             {

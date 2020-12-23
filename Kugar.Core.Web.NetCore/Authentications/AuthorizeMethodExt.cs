@@ -163,6 +163,7 @@ namespace Kugar.Core.Web.Authentications
 
                     if (tmpOpt.OnChallenge != null)
                     {
+                        context.Response.StatusCode = 200;
                         await tmpOpt.OnChallenge(context);
                     }
                     
@@ -176,6 +177,7 @@ namespace Kugar.Core.Web.Authentications
                         }
                         else
                         {
+                            //context.Response.StatusCode=302;
                             context.Response.Redirect($"{tmpOpt.LoginUrl}?backurl={context.Request.GetDisplayUrl()}");
                         }
 

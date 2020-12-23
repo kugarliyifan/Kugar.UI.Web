@@ -48,12 +48,12 @@ namespace Kugar.Core.Web.Authentications
         /// <summary>
         /// token校验成功后,触发该回调,如果回调中,需要登录失败,调用context的Fail函数,会触发OnChallenge回调
         /// </summary>
-        public Func<TokenValidatedContext, Task> OnTokenValidated { set; get; }
+        public Func<Microsoft.AspNetCore.Authentication.JwtBearer.TokenValidatedContext, Task> OnTokenValidated { set; get; }
 
         /// <summary>
         /// 登录失败时,触发该回调,如需要触发跳转,使用context.Response.Redirect,后使用context.HandleResponse()中止后续处理
         /// </summary>
-        public Func<JwtBearerChallengeContext, Task> OnChallenge { set; get; }
+        public Func<Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerChallengeContext, Task> OnChallenge { set; get; }
 
         private string _tokenEncKey= _defaultToken;
         private byte[] _actualEncKey= _defaultActualEncKey;

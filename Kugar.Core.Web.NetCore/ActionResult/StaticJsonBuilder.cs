@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -206,7 +207,16 @@ namespace Kugar.Core.Web.ActionResult
         {
             ActionList.Add(async (writer, model) =>
             {
-                await writer.WriteStartObjectAsync();
+                if (model!=null)
+                {
+                    await writer.WriteStartObjectAsync();
+                }
+                else
+                {
+                    await writer.WriteNullAsync();
+                    await writer.WriteEndObjectAsync();
+                }
+                
             });
 
             _hasStart = true;
@@ -373,6 +383,7 @@ namespace Kugar.Core.Web.ActionResult
                         await writer.WritePropertyNameAsync(SchemaBuilder.GetFormatPropertyName(item.propertyName));
 
                         var v = item.valueCaller(model);
+
 
                         await writer.WriteValueAsync(v);
                     }
@@ -694,8 +705,11 @@ namespace Kugar.Core.Web.ActionResult
             {
                 ActionList.Add(async (writer, model) =>
                 {
-
-                    await writer.WriteEndObjectAsync();
+                    if (model!=null)
+                    {
+                        await writer.WriteEndObjectAsync();    
+                    }
+                    
 
                     //await writer.FlushAsync();
                 });
@@ -767,18 +781,24 @@ namespace Kugar.Core.Web.ActionResult
 
                 var childValue = _valueFactory(model);
 
-
-                try
+                if (childValue!=null)
                 {
-                    foreach (var action in ActionList)
+                    try
                     {
-                        await action(writer, childValue);
+                        foreach (var action in ActionList)
+                        {
+                            await action(writer, childValue);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                        throw;
                     }
                 }
-                catch (Exception e)
+                else
                 {
-                    Console.WriteLine(e);
-                    throw;
+                    await writer.WriteNullAsync();
                 }
 
                 //此处不要调用WriteEndObjectAsync,,因为在输出的object的end中,已经调用了
@@ -1141,6 +1161,44 @@ namespace Kugar.Core.Web.ActionResult
             return builder.AddArrayObject<TElement>("ReturnData", x => x);
         }
 
+                /// <summary>
+        /// 用于需要在在传入model的时候未包含ResultReturn结构,但在返回的时候,需要一个公用的ResultReturn的外框结构的情况下使用
+        /// </summary>
+        /// <typeparam name="TElement"></typeparam>
+        /// <param name="builder"></param>
+        /// <param name="resultFactory">可在函数中根据Model中的内容判断是否成功等操作</param>
+        /// <returns></returns>
+        public static JsonSchemaObjectBuilder<TElement> AddReturnResultArray<TElement>(this JsonSchemaObjectBuilder<IReadOnlyList<TElement>> builder, Func<IEnumerable<TElement>, (bool isSuccess, int returnCode, string message)> resultFactory)
+        {
+            builder.FromObject(resultFactory)
+                .AddProperty("IsSuccess", x => x.isSuccess, "操作是否成功")
+                .AddProperty("Message", x => x.message, "返回的提示信息")
+                .AddProperty("ReturnCode", x => x.returnCode, "操作结果代码")
+                .AddProperty("Error", x => x.isSuccess ? x.message : "", "错误信息").End();
+
+            return builder.AddArrayObject<TElement>("ReturnData", x => x);
+        }
+
+        /// <summary>
+        /// 用于需要在在传入model的时候未包含ResultReturn结构,但在返回的时候,需要一个公用的ResultReturn的外框结构的情况下使用
+        /// </summary>
+        /// <typeparam name="TElement"></typeparam>
+        /// <param name="builder"></param>
+        /// <param name="resultFactory">可在函数中根据Model中的内容判断是否成功等操作</param>
+        /// <returns></returns>
+        public static JsonSchemaObjectBuilder<TElement> AddReturnResultArray<TElement>(this JsonSchemaObjectBuilder<IReadOnlyList<TElement>> builder, Func<IEnumerable<TElement>, (bool isSuccess, string message)> resultFactory)
+        {
+            builder.FromObject(resultFactory)
+                .AddProperty("IsSuccess", x => x.isSuccess, "操作是否成功")
+                .AddProperty("Message", x => x.message, "返回的提示信息")
+                .AddProperty("ReturnCode", x => 0, "操作结果代码")
+                .AddProperty("Error", x => x.isSuccess ? x.message : "", "错误信息")
+                .End();
+
+            return builder.AddArrayObject<TElement>("ReturnData", x => x);
+        }
+
+        
 
         /// <summary>
         /// 添加当前对象的关于ReturnResult的通用属性,并返回returnData对象的构建器
