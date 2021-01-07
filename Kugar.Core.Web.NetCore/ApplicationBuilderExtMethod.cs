@@ -140,6 +140,22 @@ namespace Kugar.Core.Web
                     {
                         var logger = (ILogger) context.RequestServices.GetService(typeof(ILogger));
 
+                        if (logger==null)
+                        {
+                            var logFactory =
+                                (ILoggerFactory) context.RequestServices.GetService(typeof(ILoggerFactory));
+
+                            logger = logFactory.CreateLogger("TraceRequestLog");
+                        }
+
+                        if (logger==null)
+                        {
+                            var logProvider =
+                                (ILoggerProvider) context.RequestServices.GetService(typeof(ILoggerProvider));
+
+                            logger = logProvider.CreateLogger("TraceRequestLog");
+                        }
+                        
                         if (logger!=null)
                         {
                             var headers = context.Request.Headers?.Select(x => $"{x.Key}={x.Value.ToStringEx()}").JoinToString('\n');
@@ -160,11 +176,11 @@ namespace Kugar.Core.Web
 
                             if (error==null)
                             {
-                                logger.Log(LogLevel.Error,error, $"接收到请求:url:{context.Request.GetDisplayUrl()} \n body:{data} \n header: {headers}");
+                                logger.Log(LogLevel.Error,error, $"接收到请求:requestID:{context.TraceIdentifier }|url:{context.Request.GetDisplayUrl()} \n body:{data} \n header: {headers}");
                             }
                             else
                             {
-                                logger.Log(LogLevel.Error, $"接收到请求:url:{context.Request.GetDisplayUrl()} \n body:{data} \n header: {headers}", error);
+                                logger.Log(LogLevel.Error, $"接收到请求:url:requestID:{context.TraceIdentifier }|{context.Request.GetDisplayUrl()} \n body:{data} \n header: {headers}", error);
 
                             }
                         }

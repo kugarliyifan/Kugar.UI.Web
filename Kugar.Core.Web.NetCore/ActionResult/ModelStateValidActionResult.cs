@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Kugar.Core.ExtMethod;
 using Kugar.Core.Web.Helpers;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
 namespace Kugar.Core.Web.ActionResult
@@ -16,7 +17,9 @@ namespace Kugar.Core.Web.ActionResult
     public class ModelStateValidActionResult:IActionResult
     {
         private int _returnCode;
-
+        private ModelStateJsonConverter _converter = new ModelStateJsonConverter();
+        private static JsonSerializerSettings _defaultJsonSerializerSettings = new JsonSerializerSettings();
+        
         public ModelStateValidActionResult(int returnCode = 10001)
         {
             _returnCode = returnCode;
@@ -32,11 +35,10 @@ namespace Kugar.Core.Web.ActionResult
             {
                 await writer.WriteStartObjectAsync();
 
-                    await writer.WriteProperty("isSuccess", false)
-                        .WriteProperty("returnCode", _returnCode)
-                        .WriteProperty("message","数据校验错误")
-                        .WritePropertyNameAsync("returnData")
-                        ;
+                await writer.WritePropertyAsync("isSuccess", false);
+                await writer.WritePropertyAsync("returnCode", _returnCode);
+                await writer.WritePropertyAsync("message", "数据校验错误");
+                await writer.WritePropertyNameAsync("returnData");
 
                     await writer.WriteNullAsync();
 
@@ -47,10 +49,16 @@ namespace Kugar.Core.Web.ActionResult
                         await writer.WritePropertyNameAsync("isValid", context.ModelState.IsValid);
 
                         await writer.WritePropertyNameAsync("errors");
-
-                        var converter = new ModelStateJsonConverter();
-
-                        converter.WriteJson(writer, context.ModelState, JsonSerializer.CreateDefault());
+                        
+#if NETCOREAPP3_0 || NETCOREAPP3_1
+                        var opt =
+                            ((IOptions<MvcNewtonsoftJsonOptions>)context.HttpContext.RequestServices.GetService(
+                                typeof(IOptions<MvcNewtonsoftJsonOptions>)))?.Value?.SerializerSettings?? JsonConvert.DefaultSettings?.Invoke() ?? _defaultJsonSerializerSettings;
+#else
+            var opt = JsonConvert.DefaultSettings?.Invoke() ?? _defaultJsonSerializerSettings;
+#endif
+                 
+                        _converter.WriteJson(writer, context.ModelState,JsonSerializer.Create(opt));
 
                     await writer.WriteEndObjectAsync();
 

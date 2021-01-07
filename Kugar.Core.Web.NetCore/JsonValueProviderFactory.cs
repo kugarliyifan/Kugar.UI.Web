@@ -7,6 +7,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Resources;
@@ -79,20 +80,42 @@ namespace Kugar.Core.Web
                 var inputStream = context.ActionContext.HttpContext.Request.Body;
                 inputStream.Position = 0;
 
-                var dataBytes = await inputStream.ReadAllBytesAsync();
+                //var dataBytes = await inputStream.ReadAllBytesAsync();
 
-                var jsonStr = Encoding.UTF8.GetString(dataBytes);
+                //var jsonStr = Encoding.UTF8.GetString(dataBytes);
 
                 JObject json = null;
 
-                try
+
+                using(var r = new StreamReader(inputStream, Encoding.UTF8, true, 1024, true))
+                using (var textreader=new JsonTextReader(r))
                 {
-                    json = JObject.Parse(jsonStr);
+                    try
+                    {
+                        json = (JObject)await JObject.ReadFromAsync(textreader,context.ActionContext.HttpContext.RequestAborted);
+                    }
+                    catch (Exception e)
+                    {
+                        //r.Close();
+                        throw new Exception("request中的数据无法转换为json数据");
+                    }
+                    
                 }
-                catch (Exception e)
-                {
-                    throw new Exception("request中的数据无法转换为json数据");
-                }
+                
+                //r.Close();
+                //if (JObject.ReadFromAsync(new JsonTextReader(inputStream.GetReader())))
+                //{
+                    
+                //}
+                
+                //try
+                //{
+                //    json = JObject.Parse(jsonStr);
+                //}
+                //catch (Exception e)
+                //{
+                //    throw new Exception("request中的数据无法转换为json数据");
+                //}
 
 
                 context.ActionContext.HttpContext.Items["__jsonData"] = json;

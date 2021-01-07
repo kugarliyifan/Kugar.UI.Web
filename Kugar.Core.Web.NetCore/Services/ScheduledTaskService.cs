@@ -11,7 +11,7 @@ using NCrontab;
 namespace Kugar.Core.Web.Services
 {
     /// <summary>
-    /// 一个简答模式的计划任务<br/>用于在一些已知的计划时间执行某些任务的情况下使用,Cron属性在服务启动后,变无法修改,如需配置运行时可修改,请使用Hangfire之类的其他第三方框架
+    /// 一个简单的corn模式的计划任务<br/>用于在一些已知的计划时间执行某些任务的情况下使用,Cron属性在服务启动后,变无法修改,如需配置运行时可修改,请使用Hangfire之类的其他第三方框架
     /// </summary>
     public abstract class SimpleScheduledTaskService : BackgroundService
     {

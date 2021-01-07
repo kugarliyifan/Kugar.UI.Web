@@ -53,7 +53,7 @@ namespace Kugar.Core.Web.Controllers
             controller.Response.Cookies.Append(cookieBuilder.Name, token, cookieBuilder?.Build(controller.HttpContext));
         }
 
-        public static string BuildJWtToken(this ControllerBase controller, string userID, string password,params (string key, string value)[] values)
+        public static string BuildJWtToken(this ControllerBase controller, string userID, string password,params (string key, string value)[] values )
         {
             var optManager =
                 (OptionsManager<WebJWTOption>) controller.HttpContext.RequestServices.GetService(
@@ -67,16 +67,33 @@ namespace Kugar.Core.Web.Controllers
 
             var option = optManager.Get(GetCurrentSchemeName(controller));
 
-            return BuildJWtToken(controller, userID, password, values, option);
+            return BuildJWtToken(controller, userID, password, values, option,null);
+        }
+        
+        public static string BuildJWtToken(this ControllerBase controller, string userID, string password,TimeSpan? expiredSpan=null,params (string key, string value)[] values)
+        {
+            var optManager =
+                (OptionsManager<WebJWTOption>) controller.HttpContext.RequestServices.GetService(
+                    typeof(OptionsManager<WebJWTOption>));
+
+            //var provider = (IAuthenticationSchemeProvider)Request.HttpContext.RequestServices.GetService(typeof(IAuthenticationSchemeProvider));
+
+            //var scheme = provider.GetAllSchemesAsync().Result;
+
+            //var scheme= (string)HttpContext.Current.Items.TryGetValue("SchemeName");
+
+            var option = optManager.Get(GetCurrentSchemeName(controller));
+
+            return BuildJWtToken(controller, userID, password, values, option,expiredSpan);
         }
 
         public static string BuildJWtToken(this ControllerBase controller, string userID,string password,(string key,string value)[] values,
-            WebJWTOption option)
+            WebJWTOption option,TimeSpan? expiredSpan=null)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
 
             var authTime = DateTime.UtcNow;
-            var expiresAt = authTime.Add(option.ExpireTimeSpan);
+            var expiresAt = authTime.Add(expiredSpan??option.ExpireTimeSpan);
 
             var lst=new List<Claim>()
             {

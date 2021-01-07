@@ -1,29 +1,27 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp2.1;netcoreapp3.0;netcoreapp3.1;</TargetFrameworks>
+    <TargetFrameworks>netcoreapp2.1;netcoreapp3.1;</TargetFrameworks>
     <RootNamespace>Kugar.Core.Web</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.0.162</Version>
+    <Version>1.0.171</Version>
     <Authors>Kugar</Authors>
     <Product>Kugar.Core.Web</Product>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
     <RazorGenerateComponentDesignTime>true</RazorGenerateComponentDesignTime>
     <Description>一个通用的Web工具类</Description>
     <PackageProjectUrl>https://github.com/kugarliyifan/Kugar.UI.Web</PackageProjectUrl>
-    <PackageReleaseNotes>1.修复AddWebJWT使用header返回token的问题
-2.JsonValueModelBinde使用DataAnnotation校验的时候,默认返回中文错误提示
-3.优化SimpleScheduledTaskService和TimerHostedService使用stoppingToken
-4.修复当使用FromJsonBody的时候,如果action的参数没有默认值,json中又不传该参数的时候报null的错误
-5.修复当使用FromJsonBody的时候,如果不传指定名称的参数的时候,不会触发Required的校验</PackageReleaseNotes>
+    <PackageReleaseNotes>1.修复StaticJsonTemplate的AddResult
+2.优化JsonValueProviderFactory数据读取
+3.优化UseRequestLog</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/kugarliyifan/Kugar.UI.Web</RepositoryUrl>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.0'  Or '$(TargetFramework)' == 'netcoreapp3.1'">
+  <PropertyGroup Condition="  '$(TargetFramework)' == 'netcoreapp3.1'">
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
   </PropertyGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.0'  Or '$(TargetFramework)' == 'netcoreapp3.1'">
+  <ItemGroup Condition="  '$(TargetFramework)' == 'netcoreapp3.1'">
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
@@ -62,7 +60,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Kugar.Core.NetCore" Version="1.2.127" />
+    <PackageReference Include="Kugar.Core.NetCore" Version="1.2.133" />
+    <PackageReference Include="Kugar.Storage" Version="1.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="2.2.0" />
     <PackageReference Include="ncrontab" Version="3.3.1" />
 
