@@ -17,7 +17,7 @@ using System.Web;
 
 
 
-#if NETCOREAPP2_1 || NETCOREAPP3_0 || NETCOREAPP3_1
+#if NETCOREAPP
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
@@ -866,10 +866,22 @@ namespace Kugar.Core.Web
 
         public static T? GetIntEnumNullable<T>(this HttpRequest request, string name, T defaultValue) where T:struct
         {
+#if NETCOREAPP
+            
             if (!request.Form.ContainsKey(name) && !request.Query.ContainsKey(name))
             {
                 return null;
             }
+#endif
+#if Net45
+            if (!request.Form.AllKeys.Any(x=>x==name) && !request.QueryString.AllKeys.Any(x=>x==name))
+            {
+                return null;
+            }
+#endif
+            
+            
+            
 
             var v = GetInt(request, name, (int)Convert.ToInt32(defaultValue));
 

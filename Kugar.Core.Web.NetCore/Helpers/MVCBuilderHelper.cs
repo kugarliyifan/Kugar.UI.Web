@@ -24,7 +24,11 @@ namespace Kugar.Core.Web.Helpers
             builder.AddDataAnnotationsLocalization(opt => {
                 opt.DataAnnotationLocalizerProvider = (type, factory) =>
                 {
-                    var loc = factory.Create(typeof(DataAnnotationsResources)).WithCulture(Thread.CurrentThread.CurrentUICulture);
+                    var loc = factory.Create(typeof(DataAnnotationsResources))
+#if NETCOREAPP3_1 || NETCOREAPP2_1 || NETCOREAPP3_0
+                    .WithCulture(Thread.CurrentThread.CurrentUICulture)
+#endif
+                        ;
                     var s1 = loc["StringLengthAttribute_ValidationError"];
                     return loc;
                 };
@@ -43,7 +47,11 @@ namespace Kugar.Core.Web.Helpers
             builder.AddDataAnnotationsLocalization(opt => {
                 opt.DataAnnotationLocalizerProvider = (type, factory) =>
                 {
-                    var loc = factory.Create(typeof(DataAnnotationsResources)).WithCulture(Thread.CurrentThread.CurrentUICulture);
+                    var loc = factory.Create(typeof(DataAnnotationsResources))
+#if NETCOREAPP3_1 || NETCOREAPP2_1 || NETCOREAPP3_0
+                    .WithCulture(Thread.CurrentThread.CurrentUICulture)
+#endif
+                        ;
                     var s1 = loc["StringLengthAttribute_ValidationError"];
                     return loc;
                 };

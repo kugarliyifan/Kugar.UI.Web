@@ -53,7 +53,7 @@ namespace Kugar.Core.Web.Formatters
 #if NETCOREAPP2_1
             var ac = acce.ActionContext.ActionDescriptor as ControllerActionDescriptor;
 #endif
-#if NETCOREAPP3_0 || NETCOREAPP3_1
+#if NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0
             var endpoint = acce.ActionContext.HttpContext.GetEndpoint();
             var ac = endpoint.Metadata.GetMetadata<ControllerActionDescriptor>();   //用来获取当前Action对应的函数信息
 #endif

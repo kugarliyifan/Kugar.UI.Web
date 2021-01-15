@@ -86,10 +86,10 @@ namespace Kugar.Core.Web
             }
 
             var resp = context.HttpContext.Response;
-
+            resp.Clear();
             // 设置 HTTP Header
             resp.ContentType = "image/" + ImageFormat.Jpeg;
-            resp.Clear();
+            
 
             
 

@@ -150,7 +150,7 @@ namespace Kugar.Core.Web.ActionResult
 
     }
 
-    public delegate Task PipeAction<in TModel>(JsonWriter writer, TModel model);
+    public delegate Task PipeAction<in TModel>(JsonWriter writer,Microsoft.AspNetCore.Http.HttpContext context, TModel model);
 
     public class JsonSchemaObjectBuilder<TModel> : StaticJsonBuilderBase, IDisposable
     {
@@ -205,7 +205,7 @@ namespace Kugar.Core.Web.ActionResult
 
         public virtual JsonSchemaObjectBuilder<TModel> Start()
         {
-            ActionList.Add(async (writer, model) =>
+            ActionList.Add(async (writer,_, model) =>
             {
                 await writer.WriteStartObjectAsync();
                 
@@ -246,7 +246,7 @@ namespace Kugar.Core.Web.ActionResult
 
             propertyName = SchemaBuilder.GetFormatPropertyName(propertyName);
 
-            PipeAction<TModel> s = async (writer, model) =>
+            PipeAction<TModel> s = async (writer,context, model) =>
              {
                  await writer.WritePropertyNameAsync(propertyName);
 
@@ -261,6 +261,41 @@ namespace Kugar.Core.Web.ActionResult
                      await writer.WriteNullAsync();
                  }
              };
+
+
+            _parentSchemaBulder.AddProperty(propertyName, _parentSchemaBulder._typeToJsonObjectType(typeof(TValue)), desciption,
+                example: example, nullable ?? isNullable(typeof(TValue)));
+
+            ActionList.Add(s);
+
+            return this;
+        }
+
+        public JsonSchemaObjectBuilder<TModel> AddProperty<TValue>(string propertyName, Func<Microsoft.AspNetCore.Http.HttpContext,TModel, TValue> valueFactory, string desciption = "",/* JsonObjectType type,*/  object example = null,
+            bool? nullable = null)
+        {
+            Debug.Assert(!string.IsNullOrWhiteSpace(propertyName));
+            Debug.Assert(valueFactory != null);
+
+            //var valueFunc = valueFactory.Compile();
+
+            propertyName = SchemaBuilder.GetFormatPropertyName(propertyName);
+
+            PipeAction<TModel> s = async (writer,context, model) =>
+            {
+                await writer.WritePropertyNameAsync(propertyName);
+
+                var value = valueFactory(context,model);
+
+                if (value != null)
+                {
+                    await writer.WriteValueAsync(value);
+                }
+                else
+                {
+                    await writer.WriteNullAsync();
+                }
+            };
 
 
             _parentSchemaBulder.AddProperty(propertyName, _parentSchemaBulder._typeToJsonObjectType(typeof(TValue)), desciption,
@@ -312,7 +347,7 @@ namespace Kugar.Core.Web.ActionResult
 
             var inputValueFunc = inputValueFactory.Compile();
 
-            PipeAction<TModel> s = async (writer, model) =>
+            PipeAction<TModel> s = async (writer,_, model) =>
              {
                  var inputValue = inputValueFunc(model);
 
@@ -376,7 +411,7 @@ namespace Kugar.Core.Web.ActionResult
 
             typeBuilder.End();
 
-            PipeAction<TModel> s = async (writer, model) =>
+            PipeAction<TModel> s = async (writer,_, model) =>
             {
                 if (model != null)
                 {
@@ -433,7 +468,7 @@ namespace Kugar.Core.Web.ActionResult
 
             typeBuilder.End();
 
-            PipeAction<TModel> s = async (writer, model) =>
+            PipeAction<TModel> s = async (writer,_, model) =>
             {
                 //foreach (var item in funcList)
                 //{
@@ -477,7 +512,7 @@ namespace Kugar.Core.Web.ActionResult
 
             _parentSchemaBulder.AddArrayProperty(propertyName, desciption);
 
-            PipeAction<TModel> s = async (writer, model) =>
+            PipeAction<TModel> s = async (writer, _,model) =>
             {
                 var inputValue = await inputValueFunc(model);
 
@@ -552,7 +587,7 @@ namespace Kugar.Core.Web.ActionResult
 
             if (!string.IsNullOrWhiteSpace(propertyName))
             {
-                ActionList.Add(async (writer, _) =>
+                ActionList.Add(async (writer,_, _) =>
                 {
                     await writer.WritePropertyNameAsync(propertyName);
                 });
@@ -583,7 +618,7 @@ namespace Kugar.Core.Web.ActionResult
 
             if (!string.IsNullOrWhiteSpace(propertyName))
             {
-                ActionList.Add(async (writer, _) =>
+                ActionList.Add(async (writer,_, _) =>
                 {
                     await writer.WritePropertyNameAsync(propertyName);
                 });
@@ -650,7 +685,7 @@ namespace Kugar.Core.Web.ActionResult
 
             if (!string.IsNullOrWhiteSpace(propertyName))
             {
-                ActionList.Add(async (writer, _) =>
+                ActionList.Add(async (writer,_, _) =>
                 {
                     await writer.WritePropertyNameAsync(propertyName);
                 });
@@ -705,7 +740,7 @@ namespace Kugar.Core.Web.ActionResult
         {
             if (_hasStart)
             {
-                ActionList.Add(async (writer, model) =>
+                ActionList.Add(async (writer,_, model) =>
                 {
                     if (model!=null)
                     {
@@ -777,7 +812,7 @@ namespace Kugar.Core.Web.ActionResult
         {
             //var loopValueFactory = _valueFactory.Compile();
 
-            _parentPipe.Add(async (writer, model) =>
+            _parentPipe.Add(async (writer,context, model) =>
             {
                 //await writer.WriteStartObjectAsync();
 
@@ -789,7 +824,7 @@ namespace Kugar.Core.Web.ActionResult
                     {
                         foreach (var action in ActionList)
                         {
-                            await action(writer, childValue);
+                            await action(writer,context, childValue);
                         }
                     }
                     catch (Exception e)
@@ -858,7 +893,7 @@ namespace Kugar.Core.Web.ActionResult
         {
             var loopValueFactory = _listValueFactory.Compile();
 
-            _lst.Add(async (writer, model) =>
+            _lst.Add(async (writer,context, model) =>
             {
                 await writer.WriteStartArrayAsync();
 
@@ -872,7 +907,7 @@ namespace Kugar.Core.Web.ActionResult
                     {
                         foreach (var action in _loopObject)
                         {
-                            await action(writer, element);
+                            await action(writer,context, element);
                         }
                     }
                     catch (Exception e)
@@ -1048,7 +1083,7 @@ namespace Kugar.Core.Web.ActionResult
 
                 foreach (var action in lst)
                 {
-                    await action(writer, Model);
+                    await action(writer,context.HttpContext, Model);
                 }
 
                 //writer.WriteEndObject();

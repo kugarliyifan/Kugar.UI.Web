@@ -117,9 +117,9 @@ namespace Kugar.Core.Web.Authentications
                     {
 #if NETCOREAPP2_1
                         var userName = context.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value.ToStringEx();
-                        var pw = context.Principal.FindFirst("k")?.Value.ToStringEx();
+                        var pw = (context.Principal.FindFirst("k")?.Value).ToStringEx().DesDecrypt(tmpOpt.TokenEncKey.Left(8));
 #endif
-#if NETCOREAPP3_0 || NETCOREAPP3_1
+#if NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0
                         var userName = context.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
                         var pw = context.Principal.FindFirstValue("k").DesDecrypt(tmpOpt.TokenEncKey.Left(8));
 #endif
@@ -127,12 +127,16 @@ namespace Kugar.Core.Web.Authentications
                         pw = pw.Trim();
 
                         var ret = await tmpOpt.LoginService.Login(context.HttpContext, userName, pw);
-
+                         
                         if (!ret.IsSuccess)
                         {
                             context.Fail("身份校验错误");
 
                             return;
+                        }
+                        else
+                        {
+                            context.Principal.AddClaim("userID", ret.ReturnData);
                         }
                     }
 
