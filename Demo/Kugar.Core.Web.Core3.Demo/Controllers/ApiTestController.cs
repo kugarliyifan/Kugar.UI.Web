@@ -123,7 +123,15 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
 
         public ResultReturn<(string str1, int int3)> Test()
         {
+
             return new SuccessResultReturn<(string str1, int int3)>(("2222",222));
+        }
+
+        public async Task<IActionResult> Test6()
+        {
+            return this.JsonTemplate<TestTemplate2>(new Test<string, string>("22", "33"));
+
+            //return new TestTemplate2().Create();
         }
 
         public object Test2()
@@ -306,6 +314,18 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
         }
 
 
+    }
+
+    public class TestTemplate2 : JsonTemplateObjectBase<Test<string, string>>
+    {
+        public override void BuildScheme(IObjectBuilder<Test<string, string>> builder)
+        {
+            builder.AddProperty("Prop2",x=>x.Model.Prop2,"sdfsfsf");
+            builder.AddProperty("Prop4", x => DateTime.Now);
+            builder.AddProperty("prop3", x => x.Model.Prop3, "测试属性2");
+        }
+
+        
     }
 
     //public class A : DefaultContractResolver

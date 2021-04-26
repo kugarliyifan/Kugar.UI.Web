@@ -30,11 +30,11 @@ namespace Kugar.Core.Web.Helpers
     {
         public override void WriteJson(JsonWriter writer, ModelStateErrorException value, JsonSerializer serializer)
         {
-            writer.WriteStartObject();
+            writer.WriteStartObjectAsync();
 
-            writer.WriteProperty("isValid", value.ModelState.IsValid);
+            writer.WritePropertyAsync("isValid", value.ModelState.IsValid);
 
-            writer.WritePropertyName("errors");
+            writer.WritePropertyNameAsync("errors");
 
             if (!value.ModelState.IsValid)
             {
@@ -43,10 +43,10 @@ namespace Kugar.Core.Web.Helpers
             }
             else
             {
-                writer.WriteNull();
+                writer.WriteNullAsync();
             }
 
-            writer.WriteEndObject();
+            writer.WriteEndObjectAsync();
 
             
         }
@@ -62,30 +62,8 @@ namespace Kugar.Core.Web.Helpers
     {
         public override void WriteJson(JsonWriter writer, ModelStateDictionary value, JsonSerializer serializer)
         {
-            writer.WriteStartObject();
-
-            //foreach (var item in value)
-            //{
-            //    if (string.IsNullOrWhiteSpace(item.Key))
-            //    {
-            //        continue;
-            //    }
-
-            //    writer.WritePropertyName(item.Key);
-
-            //    writer.WriteStartArray();
-
-            //    if (value.ErrorCount>0)
-            //    {
-            //        foreach (var item in error.Errors)
-            //        {
-            //            writer.WriteValue(item.ErrorMessage);
-            //        }
-            //    }
-
-            //    writer.WriteEndArray();
-            //}
-
+            writer.WriteStartObjectAsync();
+            
             foreach (var modelStateKey in value.Keys)
             {
                 if (string.IsNullOrWhiteSpace(modelStateKey))
@@ -95,23 +73,23 @@ namespace Kugar.Core.Web.Helpers
 
                 if (value.TryGetValue(modelStateKey, out var error))
                 {
-                    writer.WritePropertyName(modelStateKey);
+                    writer.WritePropertyNameAsync(modelStateKey);
 
-                    writer.WriteStartArray();
+                    writer.WriteStartArrayAsync();
 
                     if (error.Errors.HasData())
                     {
                         foreach (var item in error.Errors)
                         {
-                            writer.WriteValue(string.IsNullOrWhiteSpace(item.ErrorMessage)?item.Exception.Message:item.ErrorMessage);
+                            writer.WriteValueAsync(string.IsNullOrWhiteSpace(item.ErrorMessage)?item.Exception.Message:item.ErrorMessage);
                         }
                     }
 
-                    writer.WriteEndArray();
+                    writer.WriteEndArrayAsync();
                 }
             }
 
-            writer.WriteEndObject();
+            writer.WriteEndObjectAsync();
         }
 
 

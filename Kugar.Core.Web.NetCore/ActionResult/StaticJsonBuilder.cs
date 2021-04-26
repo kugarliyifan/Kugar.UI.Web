@@ -150,7 +150,7 @@ namespace Kugar.Core.Web.ActionResult
 
     }
 
-    public delegate Task PipeAction<in TModel>(JsonWriter writer,Microsoft.AspNetCore.Http.HttpContext context, TModel model);
+    public delegate Task PipeAction<in TModel>(JsonWriter writer, TModel model);
 
     public class JsonSchemaObjectBuilder<TModel> : StaticJsonBuilderBase, IDisposable
     {
@@ -205,7 +205,7 @@ namespace Kugar.Core.Web.ActionResult
 
         public virtual JsonSchemaObjectBuilder<TModel> Start()
         {
-            ActionList.Add(async (writer,_, model) =>
+            ActionList.Add(async (writer, model) =>
             {
                 await writer.WriteStartObjectAsync();
                 
@@ -246,7 +246,7 @@ namespace Kugar.Core.Web.ActionResult
 
             propertyName = SchemaBuilder.GetFormatPropertyName(propertyName);
 
-            PipeAction<TModel> s = async (writer,context, model) =>
+            PipeAction<TModel> s = async (writer, model) =>
              {
                  await writer.WritePropertyNameAsync(propertyName);
 
@@ -261,41 +261,6 @@ namespace Kugar.Core.Web.ActionResult
                      await writer.WriteNullAsync();
                  }
              };
-
-
-            _parentSchemaBulder.AddProperty(propertyName, _parentSchemaBulder._typeToJsonObjectType(typeof(TValue)), desciption,
-                example: example, nullable ?? isNullable(typeof(TValue)));
-
-            ActionList.Add(s);
-
-            return this;
-        }
-
-        public JsonSchemaObjectBuilder<TModel> AddProperty<TValue>(string propertyName, Func<Microsoft.AspNetCore.Http.HttpContext,TModel, TValue> valueFactory, string desciption = "",/* JsonObjectType type,*/  object example = null,
-            bool? nullable = null)
-        {
-            Debug.Assert(!string.IsNullOrWhiteSpace(propertyName));
-            Debug.Assert(valueFactory != null);
-
-            //var valueFunc = valueFactory.Compile();
-
-            propertyName = SchemaBuilder.GetFormatPropertyName(propertyName);
-
-            PipeAction<TModel> s = async (writer,context, model) =>
-            {
-                await writer.WritePropertyNameAsync(propertyName);
-
-                var value = valueFactory(context,model);
-
-                if (value != null)
-                {
-                    await writer.WriteValueAsync(value);
-                }
-                else
-                {
-                    await writer.WriteNullAsync();
-                }
-            };
 
 
             _parentSchemaBulder.AddProperty(propertyName, _parentSchemaBulder._typeToJsonObjectType(typeof(TValue)), desciption,
@@ -347,7 +312,7 @@ namespace Kugar.Core.Web.ActionResult
 
             var inputValueFunc = inputValueFactory.Compile();
 
-            PipeAction<TModel> s = async (writer,_, model) =>
+            PipeAction<TModel> s = async (writer, model) =>
              {
                  var inputValue = inputValueFunc(model);
 
@@ -411,7 +376,7 @@ namespace Kugar.Core.Web.ActionResult
 
             typeBuilder.End();
 
-            PipeAction<TModel> s = async (writer,_, model) =>
+            PipeAction<TModel> s = async (writer, model) =>
             {
                 if (model != null)
                 {
@@ -468,7 +433,7 @@ namespace Kugar.Core.Web.ActionResult
 
             typeBuilder.End();
 
-            PipeAction<TModel> s = async (writer,_, model) =>
+            PipeAction<TModel> s = async (writer, model) =>
             {
                 //foreach (var item in funcList)
                 //{
@@ -512,7 +477,7 @@ namespace Kugar.Core.Web.ActionResult
 
             _parentSchemaBulder.AddArrayProperty(propertyName, desciption);
 
-            PipeAction<TModel> s = async (writer, _,model) =>
+            PipeAction<TModel> s = async (writer, model) =>
             {
                 var inputValue = await inputValueFunc(model);
 
@@ -587,7 +552,7 @@ namespace Kugar.Core.Web.ActionResult
 
             if (!string.IsNullOrWhiteSpace(propertyName))
             {
-                ActionList.Add(async (writer,_, _) =>
+                ActionList.Add(async (writer, _) =>
                 {
                     await writer.WritePropertyNameAsync(propertyName);
                 });
@@ -618,7 +583,7 @@ namespace Kugar.Core.Web.ActionResult
 
             if (!string.IsNullOrWhiteSpace(propertyName))
             {
-                ActionList.Add(async (writer,_, _) =>
+                ActionList.Add(async (writer, _) =>
                 {
                     await writer.WritePropertyNameAsync(propertyName);
                 });
@@ -679,13 +644,13 @@ namespace Kugar.Core.Web.ActionResult
         /// <param name="loopValueFactory">获取数据列表的函数</param>
         /// <param name="desciption">备注</param>
         /// <returns></returns>
-        public JsonSchemaObjectBuilder<TElement> AddArrayObject<TElement>(string propertyName, Expression<Func<TModel, IEnumerable<TElement>>> loopValueFactory, string desciption = "")
+        public JsonSchemaObjectBuilder<TElement> AddArrayObject<TElement>(string propertyName, Func<TModel, IEnumerable<TElement>> loopValueFactory, string desciption = "")
         {
             propertyName = SchemaBuilder.GetFormatPropertyName(propertyName);
 
             if (!string.IsNullOrWhiteSpace(propertyName))
             {
-                ActionList.Add(async (writer,_, _) =>
+                ActionList.Add(async (writer, _) =>
                 {
                     await writer.WritePropertyNameAsync(propertyName);
                 });
@@ -740,7 +705,7 @@ namespace Kugar.Core.Web.ActionResult
         {
             if (_hasStart)
             {
-                ActionList.Add(async (writer,_, model) =>
+                ActionList.Add(async (writer, model) =>
                 {
                     if (model!=null)
                     {
@@ -812,7 +777,7 @@ namespace Kugar.Core.Web.ActionResult
         {
             //var loopValueFactory = _valueFactory.Compile();
 
-            _parentPipe.Add(async (writer,context, model) =>
+            _parentPipe.Add(async (writer, model) =>
             {
                 //await writer.WriteStartObjectAsync();
 
@@ -824,7 +789,7 @@ namespace Kugar.Core.Web.ActionResult
                     {
                         foreach (var action in ActionList)
                         {
-                            await action(writer,context, childValue);
+                            await action(writer, childValue);
                         }
                     }
                     catch (Exception e)
@@ -859,10 +824,10 @@ namespace Kugar.Core.Web.ActionResult
         private List<PipeAction<TModel>> _lst = null;
 
         private List<PipeAction<TElement>> _loopObject = new List<PipeAction<TElement>>();
-        private Expression<Func<TModel, IEnumerable<TElement>>> _listValueFactory = null;
+        private Func<TModel, IEnumerable<TElement>> _listValueFactory = null;
         private JsonObjectSchemeBuilder _schemaBuilder = null;
 
-        public JsonSchemaArrayBuilder(Expression<Func<TModel, IEnumerable<TElement>>> listValueFactory, List<PipeAction<TModel>> lst, JsonObjectSchemeBuilder schemaBuilder)
+        public JsonSchemaArrayBuilder(Func<TModel, IEnumerable<TElement>> listValueFactory, List<PipeAction<TModel>> lst, JsonObjectSchemeBuilder schemaBuilder)
         {
             _lst = lst;
             _listValueFactory = listValueFactory;
@@ -891,13 +856,13 @@ namespace Kugar.Core.Web.ActionResult
 
         public void End()
         {
-            var loopValueFactory = _listValueFactory.Compile();
+            //var loopValueFactory = _listValueFactory.Compile();
 
-            _lst.Add(async (writer,context, model) =>
+            _lst.Add(async (writer, model) =>
             {
                 await writer.WriteStartArrayAsync();
 
-                var array = loopValueFactory(model);
+                var array = _listValueFactory(model);
 
                 foreach (var element in array)
                 {
@@ -907,7 +872,7 @@ namespace Kugar.Core.Web.ActionResult
                     {
                         foreach (var action in _loopObject)
                         {
-                            await action(writer,context, element);
+                            await action(writer, element);
                         }
                     }
                     catch (Exception e)
@@ -1083,7 +1048,7 @@ namespace Kugar.Core.Web.ActionResult
 
                 foreach (var action in lst)
                 {
-                    await action(writer,context.HttpContext, Model);
+                    await action(writer, Model);
                 }
 
                 //writer.WriteEndObject();
@@ -1337,13 +1302,16 @@ namespace Kugar.Core.Web.ActionResult
         public static JsonSchemaObjectBuilder<TElement> AddReturnResultArray<TElement>(
             this JsonSchemaObjectBuilder<ResultReturn<IEnumerable<TElement>>> builder)
         {
+            using (var b=builder.FromObject(x => x))
+            {
+                return b.AddProperty("IsSuccess", x => x.IsSuccess, "操作是否成功")
+                    .AddProperty("Message", x => x.Message, "返回的提示信息")
+                    .AddProperty("ReturnCode", x => x.ReturnCode, "操作结果代码")
+                    .AddProperty("Error", x => x.Error?.Message, "错误信息")
+                    .AddArrayObject("ReturnData", x => x.GetResultData())
+                    ;
+            }
             
-            builder.FromObject(x => x).AddProperty("IsSuccess", x => x.IsSuccess, "操作是否成功")
-                .AddProperty("Message", x => x.Message, "返回的提示信息")
-                .AddProperty("ReturnCode", x => x.ReturnCode, "操作结果代码")
-                .AddProperty("Error", x => x.Error?.Message, "错误信息").End();
-
-            return builder.AddArrayObject("ReturnData", x => x.GetResultData());
         
 
             //builder.AddProperty("IsSuccess", x => result.IsSuccess,"操作是否成功")
@@ -1366,13 +1334,17 @@ namespace Kugar.Core.Web.ActionResult
             this JsonSchemaObjectBuilder<TModel> builder,
             Func<TModel, IResultReturn<IEnumerable<TElement>>> valueFactory) where TModel : IResultReturn<IEnumerable<TElement>>
         {
-       
-            builder.FromObject(valueFactory).AddProperty("IsSuccess", x => x.IsSuccess, "操作是否成功")
-                .AddProperty("Message", x => x.Message, "返回的提示信息")
-                .AddProperty("ReturnCode", x => x.ReturnCode, "操作结果代码")
-                .AddProperty("Error", x => x.Error?.Message, "错误信息").End();
 
-            return builder.AddArrayObject("ReturnData", x => x.GetResultData());
+            using (var b = builder.FromObject(valueFactory))
+            {
+                return b.AddProperty("IsSuccess", x => x.IsSuccess, "操作是否成功")
+                    .AddProperty("Message", x => x.Message, "返回的提示信息")
+                    .AddProperty("ReturnCode", x => x.ReturnCode, "操作结果代码")
+                    .AddProperty("Error", x => x.Error?.Message, "错误信息")
+                    .AddArrayObject("ReturnData", x => x.GetResultData());
+            }
+
+            
         
 
             //builder.AddProperty("IsSuccess", x => result.IsSuccess,"操作是否成功")

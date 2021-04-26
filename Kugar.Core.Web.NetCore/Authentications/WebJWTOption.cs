@@ -55,6 +55,8 @@ namespace Kugar.Core.Web.Authentications
         /// </summary>
         public Func<Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerChallengeContext, Task> OnChallenge { set; get; }
 
+        public Func<Microsoft.AspNetCore.Authentication.JwtBearer.MessageReceivedContext,string> TokenFactory { set; get; }
+
         private string _tokenEncKey= _defaultToken;
         private byte[] _actualEncKey= _defaultActualEncKey;
 

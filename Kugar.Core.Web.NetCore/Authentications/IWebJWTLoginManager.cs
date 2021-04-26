@@ -11,4 +11,9 @@ namespace Kugar.Core.Web.Authentications
     {
         Task<ResultReturn<string>> Login(Microsoft.AspNetCore.Http.HttpContext context, string userName, string password, bool isNeedEncoding = false);
     }
+
+    public interface IUserPermissionFactoryService
+    {
+        Task<IReadOnlyList<string>> GetUserPermissions(Microsoft.AspNetCore.Http.HttpContext context, string userID);
+    }
 }

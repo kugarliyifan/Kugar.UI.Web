@@ -687,7 +687,7 @@ namespace Kugar.Core.Web.ActionResult
         {
             if (getPropertyTitle == null)
             {
-                throw new ArgumentNullException("getPropertyTitle");
+                throw new ArgumentNullException(nameof(getPropertyTitle));
             }
 
             //_propertyName = propertyName;

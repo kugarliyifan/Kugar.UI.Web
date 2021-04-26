@@ -11,6 +11,8 @@ namespace Kugar.Core.Web.Controllers
     [ApiExplorerSettings(IgnoreApi = true)]
     public class VerificationController:ControllerBase
     {
+        private static char[] _randomCoodes = "2346789ABCDEFGHJKLMNPRTUVWXYZ".ToCharArray();
+
         /// <summary>
         /// 获取一个校验码图片信息
         /// </summary>
@@ -22,7 +24,7 @@ namespace Kugar.Core.Web.Controllers
         [AllowAnonymous]
         public IActionResult VerificationCode(string type="")
         {
-            var code = RandomEx.NextString(4);
+            var code = RandomEx.NextString(_randomCoodes,4);
 
             HttpContext.Session.SetString(string.IsNullOrEmpty(type)? "VerificationCode" :$"VerificationCode_{type}", code);
 

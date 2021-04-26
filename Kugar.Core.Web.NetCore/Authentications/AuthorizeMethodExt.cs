@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 
@@ -61,6 +62,8 @@ namespace Kugar.Core.Web.Authentications
 
                 opt.Events.OnMessageReceived = async (context) =>
                 {
+                    
+
 
                     var authName = context.Scheme.Name;
 
@@ -72,15 +75,27 @@ namespace Kugar.Core.Web.Authentications
 
                     var option = tmp.Get(authName);
 
-                    if (context.HttpContext.Request.Cookies.TryGetValue(string.IsNullOrEmpty(option.Cookie?.Name) ? $"jwt.{authName}" : option.Cookie?.Name,
-                        out var v))
+                    if (option.TokenFactory!=null)
                     {
-                        context.Token = v;
+                        context.Token = option.TokenFactory(context);
                     }
-
-                    if (string.IsNullOrEmpty(context.Token) && context.Request.Headers.ContainsKey("Authorization"))
+                    else
                     {
-                        context.Token = context.Request.Headers.TryGetValue("Authorization").FirstOrDefault();
+                        if (context.HttpContext.Request.Cookies.TryGetValue(string.IsNullOrEmpty(option.Cookie?.Name) ? $"jwt.{authName}" : option.Cookie?.Name,
+                            out var v))
+                        {
+                            context.Token = v;
+                        }
+
+                        if (string.IsNullOrEmpty(context.Token) && context.Request.Headers.ContainsKey("Authorization"))
+                        {
+                            context.Token = context.Request.Headers.TryGetValue("Authorization").FirstOrDefault();
+                        }
+
+                        if (string.IsNullOrEmpty(context.Token) && context.Request.Query.ContainsKey("access_token"))
+                        {
+                            context.Token = context.Request.Query["access_token"];
+                        }
                     }
 
                     if (string.IsNullOrWhiteSpace(context.Token))
@@ -136,6 +151,19 @@ namespace Kugar.Core.Web.Authentications
                         }
                         else
                         {
+                            var permissionFactoryService =
+                                (IUserPermissionFactoryService)context.HttpContext.RequestServices.GetService(typeof(IUserPermissionFactoryService));
+
+                            if (permissionFactoryService!=null)
+                            {
+                                var permissions =
+                                    await permissionFactoryService.GetUserPermissions(context.HttpContext,
+                                        ret.ReturnData);
+
+                                context.HttpContext.Items["___CurrentUserPermisions"] = new HashSet<string>(permissions);
+
+                            }
+
                             context.Principal.AddClaim("userID", ret.ReturnData);
                         }
                     }
@@ -203,12 +231,18 @@ namespace Kugar.Core.Web.Authentications
 
                     if (string.IsNullOrWhiteSpace(tmpOpt.LoginUrl))
                     {
-                        context.Response.Redirect($"/AdminCore/Logout/{authenticationScheme}?backurl=" + context.Request.GetDisplayUrl());
+                        //if (context.)
+                        //{
+                            
+                        //}
+                        //context.Response.StatusCode = 401;
+                        //context.Response.Redirect($"/AdminCore/Logout/{authenticationScheme}?backurl=" + context.Request.GetDisplayUrl());
                     }
                     else
                     {
                         context.Response.Redirect($"{tmpOpt.LoginUrl}?backurl={context.Request.GetDisplayUrl()}");
                     }
+
                 };
             });
 

@@ -17,7 +17,7 @@ namespace Kugar.Core.Web.Services
     {
         private IServiceProvider _provider = null;
         private CrontabSchedule _crontab = null;
-        private string _cron;
+        //private string _cron;
         private bool _enabled=true;
         private bool _isInited = false;
 
@@ -32,7 +32,7 @@ namespace Kugar.Core.Web.Services
 
             try
             {
-                _crontab = CrontabSchedule.Parse(_cron);
+                _crontab = CrontabSchedule.Parse(Cron);
             }
             catch (Exception e)
             {
@@ -70,10 +70,7 @@ namespace Kugar.Core.Web.Services
         /// <summary>
         /// 计划任务的Cron配置字符串,可使用在线生成器生成后,填入
         /// </summary>
-        public virtual string Cron
-        {
-            get => _cron;
-        }
+        public abstract string Cron { get; }
 
         /// <summary>
         /// 计划任务是否启动
