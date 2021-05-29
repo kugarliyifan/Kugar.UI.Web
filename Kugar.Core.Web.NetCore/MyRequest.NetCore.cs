@@ -139,7 +139,7 @@ namespace Kugar.Core.Web
         }
 
         /// <summary>
-        /// 根据naem,获取对应的file对象
+        /// 根据name,获取对应的file对象
         /// </summary>
         /// <param name="request"></param>
         /// <param name="name"></param>
@@ -451,6 +451,12 @@ namespace Kugar.Core.Web
             return ip;
         }
 
+        /// <summary>
+        /// 获取body的文本流数据
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="encoding">默认为utf-8</param>
+        /// <returns></returns>
         public static string GetBodyString(this HttpRequest request,Encoding encoding=null)
         {
             //if (!request.Body.CanSeek)
@@ -462,10 +468,7 @@ namespace Kugar.Core.Web
 
             request.Body.Position = 0;
 
-            if (encoding == null)
-            {
-                encoding = Encoding.UTF8;
-            }
+            encoding=encoding?? Encoding.UTF8;
 
             var bytes = request.Body.ReadAllBytes();
 
@@ -476,6 +479,12 @@ namespace Kugar.Core.Web
             return data;
         }
 
+        /// <summary>
+        /// 获取body的文本流数据
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="encoding">默认为utf-8</param>
+        /// <returns></returns>
         public static async Task<string> GetBodyStringAsync(this HttpRequest request, Encoding encoding = null)
         {
             //if (!request.Body.CanSeek)
@@ -487,10 +496,7 @@ namespace Kugar.Core.Web
 
             request.Body.Position = 0;
 
-            if (encoding == null)
-            {
-                encoding = Encoding.UTF8;
-            }
+            encoding=encoding?? Encoding.UTF8;
 
             var  bytes =await request.Body.ReadAllBytesAsync();
 
@@ -499,6 +505,19 @@ namespace Kugar.Core.Web
             request.Body.Position = 0;
 
             return data;
+        }
+
+        /// <summary>
+        /// 获取当前请求的域名并自动判断是否加https以及端口号
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="includeHttp">是否包含http</param>
+        /// <returns></returns>
+        public static string GetDisplayHost(this HttpRequest request,bool includeHttp=true)
+        {
+
+            return
+                $"{(includeHttp ? "http" : "")}{((includeHttp && request.IsHttps) ? "s" : "")}{(includeHttp?"://":"")}{request.Host.Host}{((request.Host.Port == 80 || request.Host.Port == 443) ? "" : ":"+request.Host.Port.ToStringEx())}";
         }
     }
 }
