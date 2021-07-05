@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using Kugar.Core.ExtMethod;
 using Microsoft.AspNetCore.Builder;
@@ -38,23 +39,26 @@ namespace Kugar.Core.Web
             //{
             //    throw new  ArgumentNullException(nameof(requestPath));
             //}
+            var env = (IHostingEnvironment)app.ApplicationServices.GetService(typeof(IHostingEnvironment));
 
-            if (!Path.IsPathFullyQualified(folder))
+            //if (!Path.IsPathFullyQualified(folder))
+            //{
+            //    folder = Path.Join(env.ContentRootPath, folder);
+            //}
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                var env = (IHostingEnvironment)app.ApplicationServices.GetService(typeof(IHostingEnvironment));
-
-
-                if (folder.StartsWith('/'))
+                folder = Path.Join(env.ContentRootPath, folder);
+            }
+            else if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                if (!Path.IsPathFullyQualified(folder))
                 {
-                    folder = env.ContentRootPath + folder;
-                }
-                else
-                {
-                    folder = Path.Combine(env.ContentRootPath, folder);
+                    folder = Path.Join(env.ContentRootPath, folder);
                 }
             }
 
-            if (folder[folder.Length-1]!='/')
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && folder[folder.Length-1]!='/')
             {
                 folder = folder + '/';
             }
@@ -85,7 +89,8 @@ namespace Kugar.Core.Web
             var opt = new StaticFileOptions()
                       {
                           FileProvider = new PhysicalFileProvider(folder),
-                          RequestPath = requestPath,
+                          RequestPath = (PathString) requestPath,
+
                       };
 
             if (maxAge.HasValue)
@@ -99,6 +104,7 @@ namespace Kugar.Core.Web
                                                MaxAge = maxAge.Value,
                                            };
                 };
+                
             }
 
             app.UseStaticFiles(opt);

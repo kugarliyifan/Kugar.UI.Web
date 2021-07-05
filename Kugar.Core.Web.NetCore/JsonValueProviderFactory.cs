@@ -87,27 +87,27 @@ namespace Kugar.Core.Web
                 JObject json = null;
 
 
-                using(var r = new StreamReader(inputStream, Encoding.UTF8, true, 1024, true))
-                using (var textreader=new JsonTextReader(r))
+                using (var r = new StreamReader(inputStream, Encoding.UTF8, true, 1024, true))
+                using (var textreader = new JsonTextReader(r))
                 {
                     try
                     {
-                        json = (JObject)await JObject.ReadFromAsync(textreader,context.ActionContext.HttpContext.RequestAborted);
+                        json = (JObject)await JObject.ReadFromAsync(textreader, context.ActionContext.HttpContext.RequestAborted);
                     }
                     catch (Exception e)
                     {
                         //r.Close();
                         throw new Exception("request中的数据无法转换为json数据");
                     }
-                    
+
                 }
-                
+
                 //r.Close();
                 //if (JObject.ReadFromAsync(new JsonTextReader(inputStream.GetReader())))
                 //{
-                    
+
                 //}
-                
+
                 //try
                 //{
                 //    json = JObject.Parse(jsonStr);
@@ -277,7 +277,7 @@ namespace Kugar.Core.Web
 
         static JsonValueModelBinderBase()
         {
-            _defaultLocalizerFactory=new ResourceManagerStringLocalizerFactory(new OptionsWrapper<LocalizationOptions>(new LocalizationOptions()),new NullLoggerFactory());
+            _defaultLocalizerFactory = new ResourceManagerStringLocalizerFactory(new OptionsWrapper<LocalizationOptions>(new LocalizationOptions()), new NullLoggerFactory());
 
         }
 
@@ -311,17 +311,17 @@ namespace Kugar.Core.Web
                 {
                     var f = (IStringLocalizerFactory)bindingContext.HttpContext.RequestServices.GetService(typeof(IStringLocalizerFactory));
 
-                    IStringLocalizer loc=null;
+                    IStringLocalizer loc = null;
 
                     foreach (var validator in lst)
                     {
-                        var propertyKey = (string) validator.GetPropertyValue("ErrorMessageString");
+                        var propertyKey = (string)validator.GetPropertyValue("ErrorMessageString");
 
-                        if (propertyKey!=null)
+                        if (propertyKey != null)
                         {
-                            if (loc==null)
+                            if (loc == null)
                             {
-                                if (f!=null)
+                                if (f != null)
                                 {
                                     loc = f.Create(typeof(DataAnnotationsResources))
 #if NETCOREAPP3_1 || NETCOREAPP2_1 || NETCOREAPP3_0
@@ -331,12 +331,12 @@ namespace Kugar.Core.Web
                                 }
                                 else
                                 {
-                                    loc=_defaultLocalizerFactory.Create(typeof(DataAnnotationsResources));
+                                    loc = _defaultLocalizerFactory.Create(typeof(DataAnnotationsResources));
 
                                 }
                             }
 
-                            if (loc!=null)
+                            if (loc != null)
                             {
                                 var v = loc[propertyKey];
 
@@ -358,7 +358,7 @@ namespace Kugar.Core.Web
                     }
                 }
 
-                
+
 
                 return isValid;
             }
@@ -413,7 +413,7 @@ namespace Kugar.Core.Web
                     var values = x.GetEnumValues();
                     return JToken.FromObject(values.GetValue(0));
                 }
-                else  
+                else
                 {
                     return null;
                 }
@@ -458,6 +458,41 @@ namespace Kugar.Core.Web
         public abstract Task BindModelAsync(ModelBindingContext bindingContext);
 
         protected bool IsCaseSensitive => _isCaseSensitive;
+
+        protected bool TryConvertToGuid(JToken jvalue,out object value)
+        {
+            value = null;
+
+            if (jvalue == null)
+            {
+                value = (Guid?)null;
+                return true;
+            }
+            else
+            {
+                var tmp = (string)jvalue;
+
+                if (Guid.TryParseExact(tmp, "N", out var v))
+                {
+                    value = v;
+                }
+                else
+                {
+                    if (Guid.TryParseExact(tmp, "D", out v))
+                    {
+                        value = v;
+                    }
+                    else
+                    {
+                        value = null;
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+        }
     }
 
 
@@ -476,7 +511,23 @@ namespace Kugar.Core.Web
         {
             if (TryGetJsonValue(bindingContext, bindingContext.FieldName, out var jvalue))
             {
-                var value = jvalue?.ToObject(bindingContext.ModelType);
+                object value = null;
+
+                if (bindingContext.ModelType == typeof(Guid) || bindingContext.ModelType == typeof(Guid?))
+                {
+                    if (!TryConvertToGuid(jvalue,out value))
+                    {
+                        bindingContext.Result = ModelBindingResult.Failed();
+                        bindingContext.ModelState.AddModelError(bindingContext.FieldName, "无法转换为Guid");
+                        bindingContext.ModelState.SetModelValue(bindingContext.FieldName, value, value.ToStringEx());
+                        return;
+                    }
+                }
+                else
+                {
+                    value = jvalue?.ToObject(bindingContext.ModelType);
+                }
+
 
                 if (!Validate(value, bindingContext))
                 {
@@ -512,7 +563,7 @@ namespace Kugar.Core.Web
             _valueTypes = modelType.GetGenericArguments();
         }
 
-        protected object decodeJsonToValueTuple(JObject value, Type elementType)
+        protected object decodeJsonToValueTuple(JObject value, Type elementType,ModelBindingContext bindingContext)
         {
             var names = _attr.TransformNames;
 
@@ -528,7 +579,23 @@ namespace Kugar.Core.Web
                     continue;
                 }
 
-                values[i] = value.GetValue(name)?.ToObject(type);
+                var jvalue = value.GetValue(name);
+
+                if (type == typeof(Guid) || type == typeof(Guid?))
+                {
+                    if (!TryConvertToGuid(jvalue,out values[i]))
+                    {
+                        bindingContext.Result = ModelBindingResult.Failed();
+                        bindingContext.ModelState.AddModelError(bindingContext.FieldName, "无法转换为Guid");
+                        bindingContext.ModelState.SetModelValue(bindingContext.FieldName, jvalue, value.ToStringEx());
+                        //return;
+                    }
+                }
+                else
+                {
+                    values[i] = value.GetValue(name)?.ToObject(type);
+                }
+                //values[i] = value.GetValue(name)?.ToObject(type);
             }
 
             //Type genericType = Type.GetType("System.ValueTuple`" + values.Length);
@@ -544,7 +611,7 @@ namespace Kugar.Core.Web
         {
             if (TryGetJsonValue(bindingContext, bindingContext.FieldName, out var jvalue) && jvalue != null)
             {
-                var value = decodeJsonToValueTuple((JObject)jvalue, _modelType);
+                var value = decodeJsonToValueTuple((JObject)jvalue, _modelType,bindingContext);
 
                 if (!Validate(value, bindingContext))
                 {
@@ -631,7 +698,7 @@ namespace Kugar.Core.Web
                             return;
                         }
 
-                        var value = decodeJsonToValueTuple((JObject)elementJson, _elementType);
+                        var value = decodeJsonToValueTuple((JObject)elementJson, _elementType,bindingContext);
 
                         array[i] = value;
                     }
@@ -758,7 +825,7 @@ namespace Kugar.Core.Web
         }
     }
 
-    [AttributeUsage(AttributeTargets.Class|AttributeTargets.Method,AllowMultiple = false,Inherited = true)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
     public class FromBodyJsonAttribute : Attribute
     {
         /// <summary>

@@ -98,9 +98,15 @@ namespace Kugar.Core.Web.Authentications
                         }
                     }
 
+                    
                     if (string.IsNullOrWhiteSpace(context.Token))
                     {
                         context.Fail("未包含token");
+                    }
+                    //兼容Bearer开头
+                    if (context.Token.StartsWith("Bearer ",StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        context.Token = context.Token.Substring(7);
                     }
 
                 };

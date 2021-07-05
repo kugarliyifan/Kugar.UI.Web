@@ -517,7 +517,7 @@ namespace Kugar.Core.Web
         {
 
             return
-                $"{(includeHttp ? "http" : "")}{((includeHttp && request.IsHttps) ? "s" : "")}{(includeHttp?"://":"")}{request.Host.Host}{((request.Host.Port == 80 || request.Host.Port == 443) ? "" : ":"+request.Host.Port.ToStringEx())}";
+                $"{(includeHttp ? "http" : "")}{((includeHttp && request.IsHttps) ? "s" : "")}{(includeHttp?"://":"")}{request.Host.Host}{((request.Host.Port==null || request.Host.Port == 80 || request.Host.Port == 443) ? "" : ":"+request.Host.Port.ToStringEx())}";
         }
     }
 }

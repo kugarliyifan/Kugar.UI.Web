@@ -4,14 +4,18 @@
 		<TargetFrameworks>netcoreapp2.1;netcoreapp3.1;net5.0;</TargetFrameworks>
 		<RootNamespace>Kugar.Core.Web</RootNamespace>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<Version>1.0.189</Version>
+		<Version>1.0.192</Version>
 		<Authors>Kugar</Authors>
 		<Product>Kugar.Core.Web</Product>
 		<AddRazorSupportForMvc>true</AddRazorSupportForMvc>
 		<RazorGenerateComponentDesignTime>true</RazorGenerateComponentDesignTime>
 		<Description>一个通用的Web工具类</Description>
 		<PackageProjectUrl>https://github.com/kugarliyifan/Kugar.UI.Web</PackageProjectUrl>
-		<PackageReleaseNotes>1.增加了IUserPermissionFactoryService权限获取的接口</PackageReleaseNotes>
+		<PackageReleaseNotes>1.增加了IUserPermissionFactoryService权限获取的接口
+2.新增ModelValidationFilterAttribute校验类
+3.新增ValidateRuleAttribute,HttpMethod传Rule,可返回element-ui使用的数据校验功能
+4.修复GetDisplayHost端口的异常
+5.JWT验证兼容Bearer开头</PackageReleaseNotes>
 		<RepositoryUrl>https://github.com/kugarliyifan/Kugar.UI.Web</RepositoryUrl>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
