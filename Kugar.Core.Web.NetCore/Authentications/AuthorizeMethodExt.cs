@@ -104,7 +104,7 @@ namespace Kugar.Core.Web.Authentications
                         context.Fail("未包含token");
                     }
                     //兼容Bearer开头
-                    if (context.Token.StartsWith("Bearer ",StringComparison.CurrentCultureIgnoreCase))
+                    if (context.Token!=null && context.Token.StartsWith("Bearer ",StringComparison.CurrentCultureIgnoreCase))
                     {
                         context.Token = context.Token.Substring(7);
                     }
