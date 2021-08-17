@@ -519,5 +519,19 @@ namespace Kugar.Core.Web
             return
                 $"{(includeHttp ? "http" : "")}{((includeHttp && request.IsHttps) ? "s" : "")}{(includeHttp?"://":"")}{request.Host.Host}{((request.Host.Port==null || request.Host.Port == 80 || request.Host.Port == 443) ? "" : ":"+request.Host.Port.ToStringEx())}";
         }
+
+        private static HashSet<string> _empty = new HashSet<string>(StringComparer.CurrentCultureIgnoreCase);
+
+        /// <summary>
+        /// 获取权限列表,必须预先注入IUserPermissionFactoryService接口
+        /// </summary>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        public static HashSet<string> GetPermissions(this Microsoft.AspNetCore.Http.HttpContext context)
+        {
+            var permissions =(HashSet<string>)context.Items["___CurrentUserPermisions"];
+
+            return permissions ?? _empty;
+        }
     }
 }

@@ -167,7 +167,6 @@ namespace Kugar.Core.Web.Authentications
                                         ret.ReturnData);
 
                                 context.HttpContext.Items["___CurrentUserPermisions"] = new HashSet<string>(permissions);
-
                             }
 
                             context.Principal.AddClaim("userID", ret.ReturnData);
