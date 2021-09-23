@@ -463,7 +463,7 @@ namespace Kugar.Core.Web
         {
             value = null;
 
-            if (jvalue == null)
+            if ((jvalue == null || jvalue.Type== JTokenType.Null) || (jvalue.Type==JTokenType.String && jvalue.Value<string>()==""))
             {
                 value = (Guid?)null;
                 return true;
@@ -472,22 +472,33 @@ namespace Kugar.Core.Web
             {
                 var tmp = (string)jvalue;
 
-                if (Guid.TryParseExact(tmp, "N", out var v))
+             
+                if (Guid.TryParseExact(tmp, "D", out var v1))
                 {
-                    value = v;
+                    value = v1;
                 }
                 else
                 {
-                    if (Guid.TryParseExact(tmp, "D", out v))
+                    if (Guid.TryParseExact(tmp, "N", out var v2))
                     {
-                        value = v;
+                        value = v2;
                     }
                     else
                     {
-                        value = null;
-                        return false;
+                        if (Guid.TryParse(tmp,out var v))
+                        {
+                            value = v;
+                        }
+                        else
+                        {
+                            value = null;
+                            return false;
+                        }
+                        
                     }
                 }
+                
+                
 
                 return true;
             }
@@ -678,7 +689,7 @@ namespace Kugar.Core.Web
         {
             if (TryGetJsonValue(bindingContext, bindingContext.FieldName, out var jvalue) && jvalue != null)
             {
-                if (jvalue == null)
+                if (jvalue == null || jvalue.Type== JTokenType.Null)
                 {
                     bindingContext.ModelState.SetModelValue(bindingContext.ModelName, null, jvalue.ToStringEx());
 

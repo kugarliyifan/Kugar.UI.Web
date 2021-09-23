@@ -8,11 +8,13 @@ using System.Threading.Tasks;
 using System.Web;
 using Kugar.Core.BaseStruct;
 using Kugar.Core.ExtMethod;
+using Kugar.Core.Web.Authentications;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Serialization;
 
 namespace Kugar.Core.Web
@@ -532,6 +534,42 @@ namespace Kugar.Core.Web
             var permissions =(HashSet<string>)context.Items["___CurrentUserPermisions"];
 
             return permissions ?? _empty;
+        }
+
+        /// <summary>
+        /// 获取Option对象
+        /// </summary>
+        /// <typeparam name="TOption"></typeparam>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        public static TOption GetOption<TOption>(this Microsoft.AspNetCore.Http.HttpContext context) where TOption : class, new()
+        {
+            var t = (OptionsManager<TOption>)context.RequestServices.GetService(
+                typeof(OptionsManager<TOption>));
+
+            return t.Value;
+
+            //var opt = (IOptions<TOption>)context.RequestServices.GetService(typeof(IOptions<TOption>));
+
+            //return opt.Value;
+        }
+
+        /// <summary>
+        /// 获取Option对象
+        /// </summary>
+        /// <typeparam name="TOption"></typeparam>
+        /// <param name="context"></param>
+        /// <param name="name">出现多个同类型Option的时候,需要指定名称</param>
+        /// <returns></returns>
+        public static TOption GetOption<TOption>(this Microsoft.AspNetCore.Http.HttpContext context, string name)
+            where TOption : class, new()
+        {
+            var t = (OptionsManager<TOption>)context.RequestServices.GetService(
+                typeof(OptionsManager<TOption>));
+
+            var opt = t.Get(name);
+
+            return opt;
         }
     }
 }
