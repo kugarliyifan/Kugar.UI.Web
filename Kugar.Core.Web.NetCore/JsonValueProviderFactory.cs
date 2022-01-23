@@ -324,7 +324,7 @@ namespace Kugar.Core.Web
                                 if (f != null)
                                 {
                                     loc = f.Create(typeof(DataAnnotationsResources))
-#if NETCOREAPP3_1 || NETCOREAPP2_1 || NETCOREAPP3_0  || NET5_0 || NET6_0
+#if NETCOREAPP3_1 || NETCOREAPP2_1 || NETCOREAPP3_0   
                     .WithCulture(Thread.CurrentThread.CurrentUICulture)
 #endif
                                         ;
