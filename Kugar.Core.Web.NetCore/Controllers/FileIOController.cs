@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 using Kugar.Core.BaseStruct;
 using Kugar.Core.ExtMethod;
 
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1  || NET5_0 || NET6_0
 using Kugar.Storage;
 #endif
 
@@ -33,7 +33,7 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1 || NET5_0 || NET6_0
 
 namespace Kugar.Core.Web
 {

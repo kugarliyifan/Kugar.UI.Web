@@ -127,12 +127,12 @@ namespace Kugar.Core.Web.Core3.Demo.Controllers
             return new SuccessResultReturn<(string str1, int int3)>(("2222",222));
         }
 
-        public async Task<IActionResult> Test6()
-        {
-            return this.JsonTemplate<TestTemplate2>(new Test<string, string>("22", "33"));
+        //public async Task<IActionResult> Test6()
+        //{
+        //    return this<TestTemplate2>(new Test<string, string>("22", "33"));
 
-            //return new TestTemplate2().Create();
-        }
+        //    //return new TestTemplate2().Create();
+        //}
 
         public object Test2()
         {
