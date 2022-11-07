@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using Kugar.Core.ExtMethod;
+using Kugar.Core.Web.Attributes;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -111,7 +112,7 @@ namespace Kugar.Core.Web
         }
 
         /// <summary>
-        /// 简单的使用Logger记录request的信息,不建议在生产环境中使用,生产环境使用请使用HttpReports之类的监控,使用该功能时,请检查是否有注入ILogger,未注入的,无法写入日志
+        /// 简单的使用Logger记录request的信息,可以通过logFilter参数或在action上加入[RequestLog],不建议在生产环境中使用,生产环境使用请使用HttpReports之类的监控,使用该功能时,请检查是否有注入ILogger,未注入的,无法写入日志
         /// </summary>
         /// <param name="app"></param>
         /// <param name="logFilter">过滤一条连接是否记录日志,返回true,则记录,false不记录</param>
@@ -123,7 +124,23 @@ namespace Kugar.Core.Web
 
                 var data = "";
 
-                var needForLog = logFilter?.Invoke(context)??true;
+                var executingEndpoint = context.GetEndpoint();
+
+                var tag = "";
+                
+                // Get attributes on the executing action method and it's defining controller class
+                var requestLog = executingEndpoint.Metadata.OfType<RequestLogAttribute>();
+
+                var needForLog = requestLog.HasData();
+
+                if (!needForLog) 
+                {
+                    needForLog = logFilter?.Invoke(context)??true;
+                }
+                else
+                {
+                    tag = requestLog.First()?.Tag??"";
+                }
 
                 if (needForLog)
                 {
@@ -182,11 +199,11 @@ namespace Kugar.Core.Web
 
                             if (error==null)
                             {
-                                logger.Log(LogLevel.Error,error, $"接收到请求:requestID:{context.TraceIdentifier }|url:{context.Request.GetDisplayUrl()} \n body:{data} \n header: {headers}");
+                                logger.Log(LogLevel.Debug, $"{tag}接收到请求:requestID:{context.TraceIdentifier }|url:{context.Request.GetDisplayUrl()} \n body:{data} \n header: {headers}");
                             }
                             else
                             {
-                                logger.Log(LogLevel.Error, $"接收到请求:url:requestID:{context.TraceIdentifier }|{context.Request.GetDisplayUrl()} \n body:{data} \n header: {headers}", error);
+                                logger.Log(LogLevel.Error,error, $"{tag}接收到请求:url:requestID:{context.TraceIdentifier }|{context.Request.GetDisplayUrl()} \n body:{data} \n header: {headers}", error);
 
                             }
                         }

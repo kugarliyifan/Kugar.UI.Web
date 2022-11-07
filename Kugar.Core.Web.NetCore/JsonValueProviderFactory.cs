@@ -33,6 +33,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Guid = System.Guid;
 
 namespace Kugar.Core.Web
 {
@@ -355,6 +356,8 @@ namespace Kugar.Core.Web
 
                             bindingContext.ModelState.AddModelError(bindingContext.FieldName, new ValidationException(validationResult, validator, value), bindingContext.ModelMetadata);
                         }
+
+                        value = GetNetTypeValue(bindingContext, bindingContext.FieldName);
                     }
                 }
 
@@ -454,6 +457,37 @@ namespace Kugar.Core.Web
             }
         }
 
+        protected JToken GetJsonValue(ModelBindingContext bindingContext)
+        {
+            if (bindingContext.HttpContext.Items.TryGetValue("__jsonData", out var item))
+            {
+                var json = (JObject)item;
+
+                if (json != null && json.TryGetValue(bindingContext.FieldName, _isCaseSensitive ? StringComparison.CurrentCulture : StringComparison.InvariantCultureIgnoreCase, out var value))
+                {
+                    return value;
+                }
+                else
+                {
+                    return getTypeDefaultJToken(bindingContext.ModelType);
+                
+                }
+                //if (_isCaseSensitive)
+                //{
+                //    value = json?.GetValue(bindingContext.FieldName);
+                //}
+                //else
+                //{
+                //    value = json?.GetValue(bindingContext.FieldName, StringComparison.InvariantCultureIgnoreCase);
+                //}
+                 
+            }
+            else
+            { 
+
+                return null;
+            }
+        }
 
         public abstract Task BindModelAsync(ModelBindingContext bindingContext);
 
@@ -504,6 +538,44 @@ namespace Kugar.Core.Web
             }
 
         }
+
+        private object GetNetTypeValue(ModelBindingContext bindingContext, string fieldName)
+        {
+            if (TryGetJsonValue(bindingContext,fieldName,out var v))
+            {
+                if (bindingContext.ModelType== typeof(Guid))
+                {
+                    if (TryConvertToGuid(v, out var v1))
+                    {
+                        return v1;
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+                else if (bindingContext.ModelType == typeof(Guid?))
+                {
+                    if (TryConvertToGuid(v, out var v1))
+                    {
+                        return v1;
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+                else
+                {
+                    return v.ToObject(bindingContext.ModelType);
+                }
+            }
+            else
+            {
+                return null;
+            }
+
+        }
     }
 
 
@@ -544,6 +616,26 @@ namespace Kugar.Core.Web
                 {
                     bindingContext.ModelState.SetModelValue(bindingContext.FieldName, value, value.ToStringEx());
                 }
+                else
+                {
+                    jvalue = GetJsonValue(bindingContext);
+
+                    if (bindingContext.ModelType == typeof(Guid) || bindingContext.ModelType == typeof(Guid?))
+                    {
+                        if (!TryConvertToGuid(jvalue,out value))
+                        {
+                            bindingContext.Result = ModelBindingResult.Failed();
+                            bindingContext.ModelState.AddModelError(bindingContext.FieldName, "无法转换为Guid");
+                            bindingContext.ModelState.SetModelValue(bindingContext.FieldName, value, value.ToStringEx());
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        value = jvalue?.ToObject(bindingContext.ModelType);
+                    }
+                }
+                
 
                 bindingContext.Result = ModelBindingResult.Success(value);
             }
@@ -627,8 +719,7 @@ namespace Kugar.Core.Web
                 if (!Validate(value, bindingContext))
                 {
                     bindingContext.ModelState.SetModelValue(bindingContext.FieldName, value, value.ToStringEx());
-                }
-
+                } 
 
                 bindingContext.Result = ModelBindingResult.Success(value);
             }

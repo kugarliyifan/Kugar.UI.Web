@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.Claims;
 
@@ -40,21 +41,21 @@ namespace Kugar.Core.Web.Authentications
             builder.Services.AddOptions().Configure<WebJWTOption>(authenticationScheme, opt =>
              {
 
-                //opt.Cookie = options.Cookie;
-                //opt.AuthenticationScheme = authenticationScheme;
-                //opt.OnTokenValidated = options.OnTokenValidated;
-                //opt.Issuer = options.Issuer;
-                //opt.Audience = options.Audience;
-                //opt.TokenEncKey = options.TokenEncKey;
-                //opt.LoginService = options.LoginService;
-                //opt.ExpireTimeSpan = options.ExpireTimeSpan;
-                //opt.OnChallenge = options.OnChallenge;
-                //opt.LoginUrl = options.LoginUrl;
+                 //opt.Cookie = options.Cookie;
+                 //opt.AuthenticationScheme = authenticationScheme;
+                 //opt.OnTokenValidated = options.OnTokenValidated;
+                 //opt.Issuer = options.Issuer;
+                 //opt.Audience = options.Audience;
+                 //opt.TokenEncKey = options.TokenEncKey;
+                 //opt.LoginService = options.LoginService;
+                 //opt.ExpireTimeSpan = options.ExpireTimeSpan;
+                 //opt.OnChallenge = options.OnChallenge;
+                 //opt.LoginUrl = options.LoginUrl;
 
-                options.CopyValue(opt);
+                 options.CopyValue(opt);
 
-                //options.CopyValue(opt);
-            });
+                 //options.CopyValue(opt);
+             });
 
             builder.AddJwtBearer(authenticationScheme, (opt) =>
             {
@@ -62,9 +63,6 @@ namespace Kugar.Core.Web.Authentications
 
                 opt.Events.OnMessageReceived = async (context) =>
                 {
-                    
-
-
                     var authName = context.Scheme.Name;
 
                     var tmp = (OptionsManager<WebJWTOption>)context.HttpContext.RequestServices.GetService(

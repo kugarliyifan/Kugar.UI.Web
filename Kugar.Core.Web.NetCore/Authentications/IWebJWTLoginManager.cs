@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using Kugar.Core.BaseStruct;
@@ -8,6 +9,6 @@ namespace Kugar.Core.Web.Authentications
 {
     public interface IWebJWTLoginService
     {
-        Task<ResultReturn<string>> Login(Microsoft.AspNetCore.Http.HttpContext context, string userName, string password, bool isNeedEncoding = false);
+        Task<ResultReturn<string>> Login(Microsoft.AspNetCore.Http.HttpContext context, string userName, string password,IEnumerable<KeyValuePair<string,string>> values=null, bool isNeedEncoding = false);
     }
 }

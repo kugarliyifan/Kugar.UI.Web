@@ -102,10 +102,11 @@ namespace Kugar.Core.Web
                     await memoryStream.FlushAsync();
 
                     memoryStream.Position = 0;
-                    
+                    //resp.ContentLength = memoryStream.Length;
+
                     await resp.Body.WriteAsync(memoryStream.GetBuffer());
                     
-                    resp.ContentLength = memoryStream.Length;
+                    
                 }
                 
                 //var imgData = ImageData.SaveToBytes(ImageFormat.Jpeg);

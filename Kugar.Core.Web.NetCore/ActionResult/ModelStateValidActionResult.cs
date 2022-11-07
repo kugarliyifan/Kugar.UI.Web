@@ -12,7 +12,7 @@ using Newtonsoft.Json;
 namespace Kugar.Core.Web.ActionResult
 {
     /// <summary>
-    /// 用于格式化输出ModelState中的错误信息
+    /// 用于格式化输出ModelState中的错误信息,returnCode=10001
     /// </summary>
     public class ModelStateValidActionResult : IActionResult
     {

@@ -88,7 +88,7 @@ namespace Kugar.Core.Web.Controllers
         }
 
         public static string BuildJWtToken(this ControllerBase controller, string userID,string password,(string key,string value)[] values,
-            WebJWTOption option,TimeSpan? expiredSpan=null)
+            WebJWTOptionBase option,TimeSpan? expiredSpan=null)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
 
