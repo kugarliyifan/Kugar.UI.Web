@@ -138,7 +138,7 @@ namespace Kugar.Core.Web.Authentications
                         var userName = context.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value.ToStringEx();
                         var pw = (context.Principal.FindFirst("k")?.Value).ToStringEx().DesDecrypt(tmpOpt.TokenEncKey.Left(8));
 #endif
-#if NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0 || NET6_0
+#if NETCOREAPP3_0_OR_GREATER
                         var userName = context.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
                         var pw = context.Principal.FindFirstValue("k").DesDecrypt(tmpOpt.TokenEncKey.Left(8));
 #endif

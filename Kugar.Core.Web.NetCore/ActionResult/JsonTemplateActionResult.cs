@@ -63,7 +63,7 @@ namespace Kugar.Core.Web.ActionResult
         public async Task ExecuteResultAsync(ActionContext context)
         {
             context.HttpContext.Response.ContentType = "application/json";
-
+           
             using (var textWriter = new StreamWriter(context.HttpContext.Response.Body))
             using (var jsonWriter = new JsonTextWriter(textWriter))
             {
@@ -155,18 +155,20 @@ namespace Kugar.Core.Web.ActionResult
 
         public JsonTemplateBuilder(JsonWriter writer,Microsoft.AspNetCore.Http. HttpContext context)
         {
-#if NETCOREAPP3_0 || NETCOREAPP3_1
-            var opt = (IOptionsSnapshot<MvcNewtonsoftJsonOptions>)context.RequestServices.GetService(typeof(IOptions<MvcNewtonsoftJsonOptions>));
-
-            _resolver = opt.Value.SerializerSettings.ContractResolver as DefaultContractResolver;
-
-            _defaultSettings = opt.Value.SerializerSettings;
-#endif
+ 
 #if NETCOREAPP2_1
             _resolver = JsonConvert.DefaultSettings?.Invoke().ContractResolver as DefaultContractResolver;
             _defaultSettings = JsonConvert.DefaultSettings?.Invoke();
 #endif
 
+#if NETCOREAPP3_0_OR_GREATER
+            Debugger.Break();
+            var opt = (IOptions<MvcNewtonsoftJsonOptions>)context.RequestServices.GetService(typeof(IOptions<MvcNewtonsoftJsonOptions>));
+
+            _resolver = opt.Value.SerializerSettings.ContractResolver as DefaultContractResolver;
+
+            _defaultSettings = opt.Value.SerializerSettings;
+#endif
 
 
 
@@ -1137,7 +1139,7 @@ namespace Kugar.Core.Web.ActionResult
                 {
                     DefaultContractResolver contactResolver = null;
 
-#if NETCOREAPP3_0 || NETCOREAPP3_1
+#if NETCOREAPP3_0_OR_GREATER
                     var options =
                         ((IOptions<MvcNewtonsoftJsonOptions>)HttpContext.Current.RequestServices.GetService(
                             typeof(IOptions<MvcNewtonsoftJsonOptions>)))?.Value?.SerializerSettings ?? JsonConvert.DefaultSettings?.Invoke() ?? new JsonSerializerSettings();

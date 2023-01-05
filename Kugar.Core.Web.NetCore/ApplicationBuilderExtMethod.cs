@@ -4,12 +4,14 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Xml;
 using Kugar.Core.ExtMethod;
 using Kugar.Core.Web.Attributes;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 
@@ -24,7 +26,7 @@ namespace Kugar.Core.Web
         /// <param name="folder">物理文件夹路径,可以是相对路径或者绝对路径,相对路径为相对于IHostingEnvironment.ContentRootPath的文件夹</param>
         /// <param name="requestPath">请求的文件地址</param>
         /// <param name="maxAge">客户端缓存的文件时间,可为空</param>
-        public static void AddPhysicalStaticFiles(this IApplicationBuilder app, string folder, string requestPath,TimeSpan? maxAge=null)
+        public static void AddPhysicalStaticFiles(this IApplicationBuilder app, string folder, string requestPath,TimeSpan? maxAge=null,Action<StaticFileOptions> optionFactory=null)
         {
             if (string.IsNullOrWhiteSpace(folder))
             {
@@ -87,13 +89,15 @@ namespace Kugar.Core.Web
                 }
             }
 
+
+
             var opt = new StaticFileOptions()
                       {
                           FileProvider = new PhysicalFileProvider(folder),
                           RequestPath = (PathString) requestPath,
-
+                           
                       };
-
+            
             if (maxAge.HasValue)
             {
                 opt.OnPrepareResponse = (context) =>
@@ -106,6 +110,47 @@ namespace Kugar.Core.Web
                                            };
                 };
                 
+            }
+
+            FileExtensionContentTypeProvider contentTypes = new FileExtensionContentTypeProvider();
+            contentTypes.Mappings[".apk"] = "application/vnd.android.package-archive";
+
+            var webConfigPath = Path.Join(env.WebRootPath, "web.config");
+
+            if (File.Exists(webConfigPath))
+            {
+                var xmlDoc = new XmlDocument();
+
+                using (var file = File.Open(webConfigPath, FileMode.Open, FileAccess.Read))
+                {
+                    xmlDoc.Load(file);
+                }
+
+                var node = xmlDoc.GetFirstElementsByTagName("staticContent");
+
+                var mimeNodes = node.GetElementsByTagName("mimeMap");
+
+                if (mimeNodes.HasData())
+                {
+                    foreach (var item in mimeNodes)
+                    {
+                        var ext = item.GetAttribute("fileExtension");
+                        var mime = item.GetAttribute("mimeType");
+
+                        if (!contentTypes.Mappings.ContainsKey(ext))
+                        {
+                            contentTypes.Mappings.Add(ext, mime);
+                        }
+
+                    }
+                }
+            }
+
+            opt.ContentTypeProvider = contentTypes;
+
+            if (optionFactory!=null)
+            {
+                optionFactory(opt);
             }
 
             app.UseStaticFiles(opt);

@@ -16,7 +16,7 @@ using Kugar.Core.ExtMethod;
 using Kugar.Core.Web.Authentications;
 using Kugar.Core.Web.Convention;
 
-#if NETCOREAPP3_1  || NET5_0 || NET6_0
+#if NETCOREAPP3_0_OR_GREATER
 using Kugar.Storage;
 #endif
 

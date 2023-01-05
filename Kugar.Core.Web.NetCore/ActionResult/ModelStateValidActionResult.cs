@@ -52,7 +52,7 @@ namespace Kugar.Core.Web.ActionResult
 
                         await writer.WritePropertyNameAsync("errors",cancelToken); //property errors
 
-#if NETCOREAPP3_0 || NETCOREAPP3_1  || NET5_0 || NET6_0
+#if NETCOREAPP3_0_OR_GREATER
                         var opt =
                             ((IOptions<MvcNewtonsoftJsonOptions>)context.HttpContext.RequestServices.GetService(
                                 typeof(IOptions<MvcNewtonsoftJsonOptions>)))?.Value?.SerializerSettings?? JsonConvert.DefaultSettings?.Invoke() ?? _defaultJsonSerializerSettings;
