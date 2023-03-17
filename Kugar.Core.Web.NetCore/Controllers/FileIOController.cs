@@ -368,7 +368,7 @@ namespace Kugar.Core.Web
                             context.Principal.AddClaim("userID", ret.ReturnData);
 
                             var fileIOConfigManager =
-                                context.HttpContext.RequestServices.GetService<FileIOConfigManager>();
+                                ProviderExtensions.GetService<FileIOConfigManager>(context.HttpContext.RequestServices) ;
 
                             var option = fileIOConfigManager.GetByKey(type);
 
